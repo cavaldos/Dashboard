@@ -8,7 +8,8 @@ import { Section } from '~/components/UI/Section';
 import { StatCard } from '~/components/UI/StatCard';
 import { TextField } from '~/components/UI/TextField';
 import { UiButton } from '~/components/UI/UiButton';
-import { WorldActivityMap } from '~/components/UI/WorldActivityMap';
+import { WorldActivityMap as WorldActivityMapNew } from '~/components/UI/WorldActivityMap';
+import { WorldActivityMap as WorldActivityMapLegacy } from '~/components/UI/WorldActivityMapLegacy';
 import { cn } from '~/lib/utils';
 import { THEME_CONFIG, THEME_STORAGE_KEY, applyTheme, normalizeTheme, themeKeys, type ThemeKey } from '~/config/theme-config';
 
@@ -510,8 +511,12 @@ const HomePage = () => {
           </div>
         </Section>
 
-        <Section label="// global signal map">
-          <WorldActivityMap />
+        <Section label="// global signal map (new)">
+          <WorldActivityMapNew />
+        </Section>
+
+        <Section label="// global signal map (legacy)">
+          <WorldActivityMapLegacy />
         </Section>
 
         <Section label="// world monitor grid">
