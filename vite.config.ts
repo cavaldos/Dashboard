@@ -50,6 +50,8 @@ export default defineConfig(async ({ mode }) => {
     clearScreen: false,
     server: {
       port: 5173,
+      open: true,
+      host: '0.0.0.0',
     },
   };
 });
