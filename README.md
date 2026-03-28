@@ -74,3 +74,23 @@ export default defineConfig([
 ])
 ```
 
+## Chat page (IP + Socket)
+
+The `/chat` page uses a dedicated WebSocket server to share online peers (with IP seen by the server) and send direct messages by clicking a peer IP.
+
+Run it in two terminals:
+
+```bash
+npm run dev:chat-server
+npm run dev
+```
+
+Optional environment variables for the WebSocket server:
+
+- `CHAT_HOST` (default `0.0.0.0`)
+- `CHAT_PORT` (default `8787`)
+- `CHAT_PATH` (default `/ws/chat`)
+
+Optional frontend variable:
+
+- `VITE_CHAT_WS_URL` (example: `ws://localhost:8787/ws/chat`)

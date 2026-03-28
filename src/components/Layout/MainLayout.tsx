@@ -8,6 +8,7 @@ import { UiSelect } from '~/components/UI/UiSelect';
 const NAV_ITEMS = [
   { label: 'Home', to: '/' },
   { label: 'Intro', to: '/intro' },
+  { label: 'Chat', to: '/chat' },
   { label: 'Test', to: '/test' },
 ];
 
