@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import MapView, {
   Layer,
-  Marker,
   Source,
   type LayerProps,
   type MapGeoJSONFeature,
@@ -11,29 +10,23 @@ import MapView, {
 } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
+import { FlightsPlugin } from '~/components/UI/map/plugins/FlightsPlugin';
+import { IpPlugin } from '~/components/UI/map/plugins/IpPlugin';
+import { NodesPlugin } from '~/components/UI/map/plugins/NodesPlugin';
+import type {
+  Coordinates,
+  FlightTrack,
+  FlightSnapshot,
+  MapConnection,
+  MapLineFeatureCollection,
+  MapNode,
+  ResolvedConnection,
+  TrackedIpLocation,
+  WorldActivityMapPlugin,
+} from '~/components/UI/map/types';
 import { cn } from '~/lib/utils';
 
-type Coordinates = [number, number];
-
-type MapNode = {
-  id: string;
-  label: string;
-  region: string;
-  coordinates: Coordinates;
-  value: number;
-};
-
-type MapConnection = {
-  id: string;
-  from: string;
-  to: string;
-};
-
-type ResolvedConnection = {
-  id: string;
-  from: MapNode;
-  to: MapNode;
-};
+export type { WorldActivityMapPlugin } from '~/components/UI/map/types';
 
 type FreeIpApiLookupResponse = {
   ipAddress?: string;
@@ -56,14 +49,6 @@ type IpifyLookupResponse = {
   ip?: string;
 };
 
-type TrackedIpLocation = {
-  ip: string;
-  city: string;
-  country: string;
-  isp: string;
-  coordinates: Coordinates;
-};
-
 type AirplanesLiveAircraft = {
   hex?: string;
   flight?: string | null;
@@ -82,19 +67,6 @@ type AirplanesLivePointResponse = {
   ac?: AirplanesLiveAircraft[] | null;
 };
 
-type FlightSnapshot = {
-  icao24: string;
-  callsign: string;
-  originCountry: string;
-  coordinates: Coordinates;
-  velocity: number | null;
-  trueTrack: number | null;
-  lastContact: number;
-};
-
-type FlightTrack = FlightSnapshot & {
-  trail: Coordinates[];
-};
 
 const DETAILED_DARK_MAP_STYLE_URL = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const COUNTRY_BORDERS_GEOJSON_URL =
@@ -228,13 +200,19 @@ const FLIGHT_TRAIL_EPSILON = 0.02;
 const MAP_MIN_ZOOM = 1;
 const MAP_MAX_ZOOM = 12;
 
+type WorldActivityMapProps = {
+  plugins?: WorldActivityMapPlugin[];
+};
+
+const DEFAULT_WORLD_ACTIVITY_MAP_PLUGINS: WorldActivityMapPlugin[] = ['nodes', 'ip', 'flights'];
+
 const CONNECTION_LINE_LAYER: LayerProps = {
   id: 'world-map-connection-line',
   type: 'line',
   filter: ['==', 'isActive', 0],
   paint: {
     'line-color': 'rgba(255, 118, 58, 0.44)',
-    'line-width': 1,
+    'line-width': 1.2,
     'line-opacity': 0.72,
     'line-dasharray': [3, 6],
   },
@@ -250,7 +228,7 @@ const CONNECTION_ACTIVE_LINE_LAYER: LayerProps = {
   filter: ['==', 'isActive', 1],
   paint: {
     'line-color': 'rgba(255, 138, 76, 0.9)',
-    'line-width': 1.28,
+    'line-width': 1.5,
     'line-opacity': 0.96,
     'line-dasharray': [3, 6],
   },
@@ -289,6 +267,25 @@ const FLIGHT_TRAIL_ACTIVE_LINE_LAYER: LayerProps = {
     'line-join': 'round',
   },
 };
+
+const CONNECTION_LINE_DASH_ANIMATION_SEQUENCE: number[][] = [
+  [0, 4, 3],
+  [0.5, 4, 2.5],
+  [1, 4, 2],
+  [1.5, 4, 1.5],
+  [2, 4, 1],
+  [2.5, 4, 0.5],
+  [3, 4, 0],
+  [0, 0.5, 3, 3.5],
+  [0, 1, 3, 3],
+  [0, 1.5, 3, 2.5],
+  [0, 2, 3, 2],
+  [0, 2.5, 3, 1.5],
+  [0, 3, 3, 1],
+  [0, 3.5, 3, 0.5],
+];
+
+const CONNECTION_LINE_DASH_FRAME_MS = 80;
 
 const MAX_IP_LOOKUP_BATCH = 20;
 
@@ -777,10 +774,15 @@ const getDetailScopeLabel = (zoomLevel: number) => {
   return 'Country detail';
 };
 
-export const WorldActivityMap = () => {
+export const WorldActivityMap = ({ plugins = DEFAULT_WORLD_ACTIVITY_MAP_PLUGINS }: WorldActivityMapProps = {}) => {
   const mapShellRef = useRef<HTMLElement | null>(null);
   const mapStageRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapRef | null>(null);
+
+  const enabledPlugins = useMemo(() => new Set(plugins), [plugins]);
+  const isNodePluginEnabled = enabledPlugins.has('nodes');
+  const isIpPluginEnabled = enabledPlugins.has('ip');
+  const isFlightsPluginEnabled = enabledPlugins.has('flights');
 
   const [mapZoomLevel, setMapZoomLevel] = useState(1.45);
   const [interactiveLayerIds, setInteractiveLayerIds] = useState<string[]>([]);
@@ -803,6 +805,7 @@ export const WorldActivityMap = () => {
   const [lastFlightSyncAt, setLastFlightSyncAt] = useState<number | null>(null);
   const [hoveredCountryName, setHoveredCountryName] = useState('');
   const [hoveredCountryCode, setHoveredCountryCode] = useState<string | null>(null);
+  const isFlightOverlayEnabled = isFlightsPluginEnabled && isFlightsEnabled;
 
   const nodeById = useMemo(
     () => Object.fromEntries(MAP_NODES.map((node) => [node.id, node])) as Record<string, MapNode>,
@@ -810,8 +813,12 @@ export const WorldActivityMap = () => {
   );
 
   const resolvedConnections = useMemo(
-    () =>
-      MAP_CONNECTIONS.reduce<ResolvedConnection[]>((accumulator, edge) => {
+    () => {
+      if (!isNodePluginEnabled) {
+        return [];
+      }
+
+      return MAP_CONNECTIONS.reduce<ResolvedConnection[]>((accumulator, edge) => {
         const fromNode = nodeById[edge.from];
         const toNode = nodeById[edge.to];
 
@@ -820,11 +827,12 @@ export const WorldActivityMap = () => {
         }
 
         return accumulator;
-      }, []),
-    [nodeById],
+      }, []);
+    },
+    [isNodePluginEnabled, nodeById],
   );
 
-  const activeNode = nodeById[activeNodeId] ?? MAP_NODES[0];
+  const activeNode = isNodePluginEnabled ? nodeById[activeNodeId] ?? MAP_NODES[0] ?? null : null;
   const activeTrackedIpLocation = trackedIpLocations.find((location) => location.ip === activeTrackedIp) ?? trackedIpLocations[0] ?? null;
   const activeFlightTrack = flightTracks.find((flightTrack) => flightTrack.icao24 === activeFlightIcao) ?? flightTracks[0] ?? null;
   const mapDetailScope = useMemo(() => getDetailScopeLabel(mapZoomLevel), [mapZoomLevel]);
@@ -849,28 +857,30 @@ export const WorldActivityMap = () => {
     [hoveredCountryCode],
   );
 
-  const connectionLinesData = useMemo(
+  const connectionLinesData = useMemo<MapLineFeatureCollection>(
     () => ({
       type: 'FeatureCollection' as const,
-      features: resolvedConnections.map((edge) => ({
-        type: 'Feature' as const,
-        properties: {
-          id: edge.id,
-          isActive: edge.from.id === activeNode.id || edge.to.id === activeNode.id ? 1 : 0,
-        },
-        geometry: {
-          type: 'LineString' as const,
-          coordinates: greatCircleCoordinates(edge.from.coordinates, edge.to.coordinates),
-        },
-      })),
+      features: isNodePluginEnabled
+        ? resolvedConnections.map((edge) => ({
+            type: 'Feature' as const,
+            properties: {
+              id: edge.id,
+              isActive: activeNode && (edge.from.id === activeNode.id || edge.to.id === activeNode.id) ? 1 : 0,
+            },
+            geometry: {
+              type: 'LineString' as const,
+              coordinates: greatCircleCoordinates(edge.from.coordinates, edge.to.coordinates),
+            },
+          }))
+        : [],
     }),
-    [activeNode.id, resolvedConnections],
+    [activeNode, isNodePluginEnabled, resolvedConnections],
   );
 
-  const flightTrailLinesData = useMemo(
+  const flightTrailLinesData = useMemo<MapLineFeatureCollection>(
     () => ({
       type: 'FeatureCollection' as const,
-      features: isFlightsEnabled
+      features: isFlightOverlayEnabled
         ? flightTracks.flatMap((flightTrack) =>
             flightTrack.trail.slice(1).map((point, index) => {
               const previousPoint = flightTrack.trail[index];
@@ -890,13 +900,21 @@ export const WorldActivityMap = () => {
           )
         : [],
     }),
-    [activeFlightTrack?.icao24, flightTracks, isFlightsEnabled],
+    [activeFlightTrack?.icao24, flightTracks, isFlightOverlayEnabled],
   );
 
-  const totalSignals = useMemo(() => MAP_NODES.reduce((sum, node) => sum + node.value, 0), []);
-  const topNodes = useMemo(() => [...MAP_NODES].sort((a, b) => b.value - a.value), []);
+  const totalSignals = useMemo(() => (isNodePluginEnabled ? MAP_NODES.reduce((sum, node) => sum + node.value, 0) : 0), [isNodePluginEnabled]);
+  const topNodes = useMemo(() => (isNodePluginEnabled ? [...MAP_NODES].sort((a, b) => b.value - a.value) : []), [isNodePluginEnabled]);
 
   useEffect(() => {
+    if (!isIpPluginEnabled) {
+      if (activeTrackedIp !== null) {
+        setActiveTrackedIp(null);
+      }
+
+      return;
+    }
+
     if (trackedIpLocations.length === 0) {
       if (activeTrackedIp !== null) {
         setActiveTrackedIp(null);
@@ -908,9 +926,15 @@ export const WorldActivityMap = () => {
     if (!activeTrackedIp || !trackedIpLocations.some((location) => location.ip === activeTrackedIp)) {
       setActiveTrackedIp(trackedIpLocations[0].ip);
     }
-  }, [activeTrackedIp, trackedIpLocations]);
+  }, [activeTrackedIp, isIpPluginEnabled, trackedIpLocations]);
 
   useEffect(() => {
+    if (!isIpPluginEnabled) {
+      setSelfIpLocation(null);
+      setIsSelfIpResolving(false);
+      return;
+    }
+
     let isMounted = true;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 9000);
@@ -1000,9 +1024,17 @@ export const WorldActivityMap = () => {
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, []);
+  }, [isIpPluginEnabled]);
 
   useEffect(() => {
+    if (!isFlightsPluginEnabled) {
+      if (activeFlightIcao !== null) {
+        setActiveFlightIcao(null);
+      }
+
+      return;
+    }
+
     if (flightTracks.length === 0) {
       if (activeFlightIcao !== null) {
         setActiveFlightIcao(null);
@@ -1014,10 +1046,10 @@ export const WorldActivityMap = () => {
     if (!activeFlightIcao || !flightTracks.some((flightTrack) => flightTrack.icao24 === activeFlightIcao)) {
       setActiveFlightIcao(flightTracks[0].icao24);
     }
-  }, [activeFlightIcao, flightTracks]);
+  }, [activeFlightIcao, flightTracks, isFlightsPluginEnabled]);
 
   useEffect(() => {
-    if (!isFlightsEnabled) {
+    if (!isFlightsPluginEnabled || !isFlightsEnabled) {
       setFlightTracks([]);
       setActiveFlightIcao(null);
       setFlightSyncError('');
@@ -1171,7 +1203,56 @@ export const WorldActivityMap = () => {
 
       activeControllers.forEach((controller) => controller.abort());
     };
-  }, [isFlightsEnabled]);
+  }, [isFlightsEnabled, isFlightsPluginEnabled]);
+
+  useEffect(() => {
+    if (!isNodePluginEnabled) {
+      return;
+    }
+
+    let animationFrameId: number | null = null;
+    let previousStep = -1;
+
+    const animateDash = (timestamp: number) => {
+      const map = mapRef.current?.getMap();
+
+      if (map) {
+        const step = Math.floor(timestamp / CONNECTION_LINE_DASH_FRAME_MS) % CONNECTION_LINE_DASH_ANIMATION_SEQUENCE.length;
+
+        if (step !== previousStep) {
+          const dashPattern = CONNECTION_LINE_DASH_ANIMATION_SEQUENCE[step];
+
+          const dashLayerIds = [CONNECTION_LINE_LAYER.id, CONNECTION_ACTIVE_LINE_LAYER.id].filter(
+            (layerId): layerId is string => typeof layerId === 'string',
+          );
+
+          for (const layerId of dashLayerIds) {
+            if (!map.getLayer(layerId)) {
+              continue;
+            }
+
+            try {
+              map.setPaintProperty(layerId, 'line-dasharray', dashPattern);
+            } catch {
+              // Ignore transient style updates while layers are reloaded.
+            }
+          }
+
+          previousStep = step;
+        }
+      }
+
+      animationFrameId = window.requestAnimationFrame(animateDash);
+    };
+
+    animationFrameId = window.requestAnimationFrame(animateDash);
+
+    return () => {
+      if (animationFrameId !== null) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isNodePluginEnabled]);
 
   useEffect(() => {
     const mapShell = mapShellRef.current;
@@ -1259,6 +1340,10 @@ export const WorldActivityMap = () => {
 
   const handleLookupSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!isIpPluginEnabled) {
+      return;
+    }
 
     const rawInput = ipInput.trim();
 
@@ -1443,6 +1528,10 @@ export const WorldActivityMap = () => {
   };
 
   const handleNodeSelect = (node: MapNode, shouldFocus = false) => {
+    if (!isNodePluginEnabled) {
+      return;
+    }
+
     setActiveNodeId(node.id);
 
     if (shouldFocus) {
@@ -1451,6 +1540,10 @@ export const WorldActivityMap = () => {
   };
 
   const handleTrackedIpSelect = (location: TrackedIpLocation, shouldFocus = false) => {
+    if (!isIpPluginEnabled) {
+      return;
+    }
+
     setActiveTrackedIp(location.ip);
 
     if (shouldFocus) {
@@ -1494,7 +1587,81 @@ export const WorldActivityMap = () => {
     }
   };
 
-  if (!activeNode) {
+  const mapScene = (
+    <div className="world-map-stage" ref={mapStageRef}>
+      <div className={cn('world-map-country-chip', hoveredCountryName && 'is-active')} aria-live="polite">
+        {hoveredCountryName || `${mapDetailScope} · hover map labels`}
+      </div>
+
+      <div className="world-map-maplibre">
+        <MapView
+          ref={mapRef}
+          mapLib={import('maplibre-gl')}
+          mapStyle={DETAILED_DARK_MAP_STYLE_URL}
+          initialViewState={{ longitude: 8, latitude: 16, zoom: 1.45 }}
+          minZoom={MAP_MIN_ZOOM}
+          maxZoom={MAP_MAX_ZOOM}
+          maxPitch={0}
+          dragRotate={false}
+          touchPitch={false}
+          attributionControl={false}
+          style={{ width: '100%', minHeight: '410px', height: '100%' }}
+          interactiveLayerIds={mapInteractiveLayerIds}
+          onLoad={refreshInteractiveLayers}
+          onStyleData={refreshInteractiveLayers}
+          onMove={handleMapMove}
+          onZoom={handleMapMove}
+          onMouseMove={handleMapHover}
+          onMouseLeave={() => {
+            setHoveredCountryName('');
+            setHoveredCountryCode(null);
+          }}
+        >
+          <Source id="world-map-country-borders" type="geojson" data={COUNTRY_BORDERS_GEOJSON_URL}>
+            <Layer {...COUNTRY_HITBOX_LAYER} />
+            <Layer {...hoveredCountryFillLayer} />
+            <Layer {...hoveredCountryLineLayer} />
+          </Source>
+
+          {isNodePluginEnabled ? (
+            <NodesPlugin
+              mapNodes={MAP_NODES}
+              activeNode={activeNode}
+              connectionLinesData={connectionLinesData}
+              connectionLineLayer={CONNECTION_LINE_LAYER}
+              connectionActiveLineLayer={CONNECTION_ACTIVE_LINE_LAYER}
+              metricFormatter={metricFormatter}
+              onSelectNode={handleNodeSelect}
+            />
+          ) : null}
+
+          {isFlightOverlayEnabled ? (
+            <FlightsPlugin
+              flightTracks={flightTracks}
+              activeFlightTrack={activeFlightTrack}
+              flightTrailLinesData={flightTrailLinesData}
+              flightTrailLineLayer={FLIGHT_TRAIL_LINE_LAYER}
+              flightTrailActiveLineLayer={FLIGHT_TRAIL_ACTIVE_LINE_LAYER}
+              formatFlightSpeed={formatFlightSpeed}
+              onSelectFlight={setActiveFlightIcao}
+            />
+          ) : null}
+
+          {isIpPluginEnabled ? (
+            <IpPlugin
+              selfIpLocation={selfIpLocation}
+              trackedIpLocations={trackedIpLocations}
+              activeTrackedIpLocation={activeTrackedIpLocation}
+              formatIpLabel={formatIpLabel}
+              onSelectTrackedIp={handleTrackedIpSelect}
+            />
+          ) : null}
+        </MapView>
+      </div>
+    </div>
+  );
+
+  if (isNodePluginEnabled && !activeNode) {
     return null;
   }
 
@@ -1508,338 +1675,176 @@ export const WorldActivityMap = () => {
 
         <div className="world-map-controls">
           <div className="world-map-kpis" aria-label="Map metrics">
-            <span>{MAP_NODES.length} nodes</span>
-            <span>{resolvedConnections.length} links</span>
-            <span>{metricFormatter.format(totalSignals)} traffic</span>
-            <span>{isFlightsEnabled ? `${flightTracks.length} flights` : 'flights off'}</span>
+            {isNodePluginEnabled ? <span>{MAP_NODES.length} nodes</span> : null}
+            {isNodePluginEnabled ? <span>{resolvedConnections.length} links</span> : null}
+            {isNodePluginEnabled ? <span>{metricFormatter.format(totalSignals)} traffic</span> : null}
+            {isFlightsPluginEnabled ? <span>{isFlightOverlayEnabled ? `${flightTracks.length} flights` : 'flights off'}</span> : null}
           </div>
 
-          <form className="world-map-lookup-form" onSubmit={handleLookupSubmit}>
-            <input
-              type="text"
-              value={ipInput}
-              onChange={(event) => setIpInput(event.target.value)}
-              placeholder="Enter IP list (e.g. 161.35.157.41,113.173.148.29)"
-              aria-label="IP address list lookup"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button type="submit" disabled={isLookupLoading}>
-              {isLookupLoading ? 'Locating...' : 'Locate IPs'}
-            </button>
-            {trackedIpLocations.length > 0 ? (
-              <button type="button" className="is-ghost" onClick={clearTrackedIpLocation}>
-                Clear
+          {isIpPluginEnabled ? (
+            <form className="world-map-lookup-form" onSubmit={handleLookupSubmit}>
+              <input
+                type="text"
+                value={ipInput}
+                onChange={(event) => setIpInput(event.target.value)}
+                placeholder="Enter IP list (e.g. 161.35.157.41,113.173.148.29)"
+                aria-label="IP address list lookup"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button type="submit" disabled={isLookupLoading}>
+                {isLookupLoading ? 'Locating...' : 'Locate IPs'}
               </button>
-            ) : null}
-          </form>
+              {trackedIpLocations.length > 0 ? (
+                <button type="button" className="is-ghost" onClick={clearTrackedIpLocation}>
+                  Clear
+                </button>
+              ) : null}
+            </form>
+          ) : null}
 
-          <button
-            type="button"
-            className={cn('world-map-flight-toggle', isFlightsEnabled && 'is-active')}
-            onClick={() => setIsFlightsEnabled((enabled) => !enabled)}
-          >
-            {isFlightsEnabled ? 'Hide Flights' : 'Show Flights'}
-          </button>
+          {isFlightsPluginEnabled ? (
+            <button
+              type="button"
+              className={cn('world-map-flight-toggle', isFlightOverlayEnabled && 'is-active')}
+              onClick={() => setIsFlightsEnabled((enabled) => !enabled)}
+            >
+              {isFlightOverlayEnabled ? 'Hide Flights' : 'Show Flights'}
+            </button>
+          ) : null}
         </div>
       </header>
 
       <div className="world-map-surface">
-        <div className="world-map-stage" ref={mapStageRef}>
-          <div className={cn('world-map-country-chip', hoveredCountryName && 'is-active')} aria-live="polite">
-            {hoveredCountryName || `${mapDetailScope} · hover map labels`}
-          </div>
-
-          <div className="world-map-maplibre">
-            <MapView
-              ref={mapRef}
-              mapLib={import('maplibre-gl')}
-              mapStyle={DETAILED_DARK_MAP_STYLE_URL}
-              initialViewState={{ longitude: 8, latitude: 16, zoom: 1.45 }}
-              minZoom={MAP_MIN_ZOOM}
-              maxZoom={MAP_MAX_ZOOM}
-              maxPitch={0}
-              dragRotate={false}
-              touchPitch={false}
-              attributionControl={false}
-              style={{ width: '100%', minHeight: '410px', height: '100%' }}
-              interactiveLayerIds={mapInteractiveLayerIds}
-              onLoad={refreshInteractiveLayers}
-              onStyleData={refreshInteractiveLayers}
-              onMove={handleMapMove}
-              onZoom={handleMapMove}
-              onMouseMove={handleMapHover}
-              onMouseLeave={() => {
-                setHoveredCountryName('');
-                setHoveredCountryCode(null);
-              }}
-            >
-              <Source id="world-map-country-borders" type="geojson" data={COUNTRY_BORDERS_GEOJSON_URL}>
-                <Layer {...COUNTRY_HITBOX_LAYER} />
-                <Layer {...hoveredCountryFillLayer} />
-                <Layer {...hoveredCountryLineLayer} />
-              </Source>
-
-              <Source id="world-map-connections" type="geojson" data={connectionLinesData}>
-                <Layer {...CONNECTION_LINE_LAYER} />
-                <Layer {...CONNECTION_ACTIVE_LINE_LAYER} />
-              </Source>
-
-              {isFlightsEnabled ? (
-                <Source id="world-map-flight-trails" type="geojson" data={flightTrailLinesData}>
-                  <Layer {...FLIGHT_TRAIL_LINE_LAYER} />
-                  <Layer {...FLIGHT_TRAIL_ACTIVE_LINE_LAYER} />
-                </Source>
-              ) : null}
-
-              {isFlightsEnabled
-                ? flightTracks.map((flightTrack) => {
-                    const isActiveFlight = flightTrack.icao24 === activeFlightTrack?.icao24;
-
-                    return (
-                      <Marker
-                        key={`flight-${flightTrack.icao24}`}
-                        longitude={flightTrack.coordinates[0]}
-                        latitude={flightTrack.coordinates[1]}
-                        anchor="center"
-                      >
-                        <button
-                          type="button"
-                          className="world-map-marker-hit"
-                          aria-label={`${flightTrack.callsign}: ${formatFlightSpeed(flightTrack.velocity)}`}
-                          title={`${flightTrack.callsign}: ${formatFlightSpeed(flightTrack.velocity)}`}
-                          onClick={() => setActiveFlightIcao(flightTrack.icao24)}
-                          onMouseEnter={() => setActiveFlightIcao(flightTrack.icao24)}
-                          onFocus={() => setActiveFlightIcao(flightTrack.icao24)}
-                        >
-                          <svg
-                            viewBox="-8 -8 16 16"
-                            className={cn('world-map-flight-node world-map-flight-svg', isActiveFlight && 'is-active')}
-                            aria-hidden="true"
-                          >
-                            <circle className="world-map-flight-halo" r={isActiveFlight ? 5.8 : 4.6} />
-                            <path
-                              className="world-map-flight-body"
-                              transform={`rotate(${flightTrack.trueTrack ?? 0})`}
-                              d="M0,-4.2 L2.8,3.2 L0,1.8 L-2.8,3.2 Z"
-                            />
-                          </svg>
-                        </button>
-                      </Marker>
-                    );
-                  })
-                : null}
-
-              {MAP_NODES.map((node) => {
-                const isActive = node.id === activeNode.id;
-
-                return (
-                  <Marker key={node.id} longitude={node.coordinates[0]} latitude={node.coordinates[1]} anchor="center">
-                    <button
-                      type="button"
-                      className="world-map-marker-hit"
-                      aria-label={`${node.label}: ${metricFormatter.format(node.value)}`}
-                      title={`${node.label}: ${metricFormatter.format(node.value)}`}
-                      onClick={() => handleNodeSelect(node, true)}
-                      onMouseEnter={() => handleNodeSelect(node)}
-                      onFocus={() => handleNodeSelect(node)}
-                    >
-                      <svg
-                        viewBox="-18 -18 36 36"
-                        className={cn('world-map-node world-map-node-svg', isActive && 'is-active')}
-                        aria-hidden="true"
-                      >
-                        <circle className="world-map-pulse pulse-1" r={isActive ? 8 : 6} />
-                        <circle className="world-map-pulse pulse-2" r={isActive ? 8 : 6} />
-                        <circle className="world-map-pulse pulse-3" r={isActive ? 8 : 6} />
-                        <circle className="world-map-ring" r={isActive ? 7 : 6} />
-                        <circle className="world-map-dot" r={isActive ? 3.4 : 3} />
-                        <text className="world-map-label" y={isActive ? -11 : -10}>
-                          {node.id}
-                        </text>
-                      </svg>
-                    </button>
-                  </Marker>
-                );
-              })}
-
-              {selfIpLocation ? (
-                <Marker longitude={selfIpLocation.coordinates[0]} latitude={selfIpLocation.coordinates[1]} anchor="center">
-                  <div
-                    className="world-map-self-ip-marker"
-                    aria-label={`Your IP: ${selfIpLocation.ip} - ${selfIpLocation.city}, ${selfIpLocation.country}`}
-                    title={`Your IP: ${selfIpLocation.ip} - ${selfIpLocation.city}, ${selfIpLocation.country}`}
-                  >
-                    <svg viewBox="-19 -18 38 36" className="world-map-ip-node world-map-ip-svg is-self" aria-hidden="true">
-                      <circle className="world-map-ip-pulse" r={9} />
-                      <circle className="world-map-ip-ring" r={7} />
-                      <circle className="world-map-ip-dot" r={3.6} />
-                      <text className="world-map-ip-label" y={-12}>
-                        ME
-                      </text>
-                    </svg>
-                  </div>
-                </Marker>
-              ) : null}
-
-              {trackedIpLocations.map((trackedIpLocation) => {
-                const isActiveTrackedIp = trackedIpLocation.ip === activeTrackedIpLocation?.ip;
-
-                return (
-                  <Marker
-                    key={trackedIpLocation.ip}
-                    longitude={trackedIpLocation.coordinates[0]}
-                    latitude={trackedIpLocation.coordinates[1]}
-                    anchor="center"
-                  >
-                    <button
-                      type="button"
-                      className="world-map-marker-hit"
-                      aria-label={`${trackedIpLocation.ip} - ${trackedIpLocation.city}, ${trackedIpLocation.country}`}
-                      title={`${trackedIpLocation.ip} - ${trackedIpLocation.city}, ${trackedIpLocation.country}`}
-                      onClick={() => handleTrackedIpSelect(trackedIpLocation, true)}
-                      onMouseEnter={() => handleTrackedIpSelect(trackedIpLocation)}
-                      onFocus={() => handleTrackedIpSelect(trackedIpLocation)}
-                    >
-                      <svg
-                        viewBox="-19 -18 38 36"
-                        className={cn('world-map-ip-node world-map-ip-svg', isActiveTrackedIp && 'is-active')}
-                        aria-hidden="true"
-                      >
-                        <circle className="world-map-ip-pulse" r={isActiveTrackedIp ? 9 : 7} />
-                        <circle className="world-map-ip-ring" r={isActiveTrackedIp ? 7 : 6} />
-                        <circle className="world-map-ip-dot" r={isActiveTrackedIp ? 3.6 : 3} />
-                        <text className="world-map-ip-label" y={isActiveTrackedIp ? -12 : -10}>
-                          {formatIpLabel(trackedIpLocation.ip)}
-                        </text>
-                      </svg>
-                    </button>
-                  </Marker>
-                );
-              })}
-            </MapView>
-          </div>
-        </div>
+        {mapScene}
 
         <aside className="world-map-sidebar" aria-live="polite">
-          <div className="world-map-focus-card">
-            <p className="world-map-focus-label">Focused Node</p>
-            <h4>{activeNode.label}</h4>
-            <p className="world-map-focus-region">{activeNode.region}</p>
-            <p className="world-map-focus-value">{metricFormatter.format(activeNode.value)}</p>
-          </div>
-
-          <div className="world-map-flight-card">
-            <div className="world-map-ip-card-head">
-              <p className="world-map-focus-label">Live Flights</p>
-              <span className="world-map-ip-count">{isFlightsEnabled ? (isFlightsSyncing ? 'syncing' : 'live') : 'paused'}</span>
+          {isNodePluginEnabled && activeNode ? (
+            <div className="world-map-focus-card">
+              <p className="world-map-focus-label">Focused Node</p>
+              <h4>{activeNode.label}</h4>
+              <p className="world-map-focus-region">{activeNode.region}</p>
+              <p className="world-map-focus-value">{metricFormatter.format(activeNode.value)}</p>
             </div>
+          ) : null}
 
-            <p className="world-map-flight-meta">
-              {isFlightsEnabled
-                ? `airplanes.live feed - ${flightTracks.length} aircraft - updated ${formatSyncClock(lastFlightSyncAt)}`
-                : 'Flight overlay is paused.'}
-            </p>
+          {isFlightsPluginEnabled ? (
+            <div className="world-map-flight-card">
+              <div className="world-map-ip-card-head">
+                <p className="world-map-focus-label">Live Flights</p>
+                <span className="world-map-ip-count">{isFlightOverlayEnabled ? (isFlightsSyncing ? 'syncing' : 'live') : 'paused'}</span>
+              </div>
 
-            {activeFlightTrack ? (
-              <>
-                <h4>{activeFlightTrack.callsign}</h4>
-                <p className="world-map-focus-region">{activeFlightTrack.originCountry}</p>
-                <p className="world-map-ip-meta">
-                  {formatFlightSpeed(activeFlightTrack.velocity)}{' '}
-                  {activeFlightTrack.trueTrack !== null ? `- HDG ${Math.round(activeFlightTrack.trueTrack)}°` : '- HDG unavailable'}
-                </p>
-              </>
-            ) : isFlightsEnabled && !flightSyncError ? (
-              <p className="world-map-ip-placeholder">No airborne flights in the current feed.</p>
-            ) : null}
+              <p className="world-map-flight-meta">
+                {isFlightOverlayEnabled
+                  ? `airplanes.live feed - ${flightTracks.length} aircraft - updated ${formatSyncClock(lastFlightSyncAt)}`
+                  : 'Flight overlay is paused.'}
+              </p>
 
-            {flightSyncError ? <p className="world-map-ip-error">{flightSyncError}</p> : null}
+              {activeFlightTrack ? (
+                <>
+                  <h4>{activeFlightTrack.callsign}</h4>
+                  <p className="world-map-focus-region">{activeFlightTrack.originCountry}</p>
+                  <p className="world-map-ip-meta">
+                    {formatFlightSpeed(activeFlightTrack.velocity)}{' '}
+                    {activeFlightTrack.trueTrack !== null ? `- HDG ${Math.round(activeFlightTrack.trueTrack)}°` : '- HDG unavailable'}
+                  </p>
+                </>
+              ) : isFlightOverlayEnabled && !flightSyncError ? (
+                <p className="world-map-ip-placeholder">No airborne flights in the current feed.</p>
+              ) : null}
 
-            {isFlightsEnabled && flightTracks.length > 0 ? (
-              <ul className="world-map-flight-list">
-                {flightTracks.slice(0, 10).map((flightTrack) => (
-                  <li key={`flight-list-${flightTrack.icao24}`}>
-                    <button
-                      type="button"
-                      className={cn('world-map-flight-item', flightTrack.icao24 === activeFlightTrack?.icao24 && 'is-active')}
-                      onClick={() => setActiveFlightIcao(flightTrack.icao24)}
-                      onMouseEnter={() => setActiveFlightIcao(flightTrack.icao24)}
-                      onFocus={() => setActiveFlightIcao(flightTrack.icao24)}
-                    >
-                      <span>{flightTrack.callsign}</span>
-                      <strong>{formatFlightSpeedCompact(flightTrack.velocity)}</strong>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
+              {flightSyncError ? <p className="world-map-ip-error">{flightSyncError}</p> : null}
 
-          <div className="world-map-ip-card">
-            <div className="world-map-ip-card-head">
-              <p className="world-map-focus-label">IP Lookup</p>
-              <span className="world-map-ip-count">{trackedIpLocations.length} tracked</span>
+              {isFlightOverlayEnabled && flightTracks.length > 0 ? (
+                <ul className="world-map-flight-list">
+                  {flightTracks.slice(0, 10).map((flightTrack) => (
+                    <li key={`flight-list-${flightTrack.icao24}`}>
+                      <button
+                        type="button"
+                        className={cn('world-map-flight-item', flightTrack.icao24 === activeFlightTrack?.icao24 && 'is-active')}
+                        onClick={() => setActiveFlightIcao(flightTrack.icao24)}
+                        onMouseEnter={() => setActiveFlightIcao(flightTrack.icao24)}
+                        onFocus={() => setActiveFlightIcao(flightTrack.icao24)}
+                      >
+                        <span>{flightTrack.callsign}</span>
+                        <strong>{formatFlightSpeedCompact(flightTrack.velocity)}</strong>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
+          ) : null}
 
-            <p className="world-map-ip-meta">
-              {selfIpLocation
-                ? `You: ${selfIpLocation.ip} - ${selfIpLocation.city}, ${selfIpLocation.country}`
-                : isSelfIpResolving
-                  ? 'Detecting your current IP location...'
-                  : 'Unable to detect your current IP location.'}
-            </p>
+          {isIpPluginEnabled ? (
+            <div className="world-map-ip-card">
+              <div className="world-map-ip-card-head">
+                <p className="world-map-focus-label">IP Lookup</p>
+                <span className="world-map-ip-count">{trackedIpLocations.length} tracked</span>
+              </div>
 
-            {activeTrackedIpLocation ? (
-              <>
-                <h4>{activeTrackedIpLocation.ip}</h4>
-                <p className="world-map-focus-region">{`${activeTrackedIpLocation.city}, ${activeTrackedIpLocation.country}`}</p>
-                <p className="world-map-ip-meta">{activeTrackedIpLocation.isp}</p>
-              </>
-            ) : !lookupError ? (
-              <p className="world-map-ip-placeholder">No IP selected. Enter one or many IPs above to add markers.</p>
-            ) : null}
+              <p className="world-map-ip-meta">
+                {selfIpLocation
+                  ? `You: ${selfIpLocation.ip} - ${selfIpLocation.city}, ${selfIpLocation.country}`
+                  : isSelfIpResolving
+                    ? 'Detecting your current IP location...'
+                    : 'Unable to detect your current IP location.'}
+              </p>
 
-            {lookupError ? <p className="world-map-ip-error">{lookupError}</p> : null}
+              {activeTrackedIpLocation ? (
+                <>
+                  <h4>{activeTrackedIpLocation.ip}</h4>
+                  <p className="world-map-focus-region">{`${activeTrackedIpLocation.city}, ${activeTrackedIpLocation.country}`}</p>
+                  <p className="world-map-ip-meta">{activeTrackedIpLocation.isp}</p>
+                </>
+              ) : !lookupError ? (
+                <p className="world-map-ip-placeholder">No IP selected. Enter one or many IPs above to add markers.</p>
+              ) : null}
 
-            {trackedIpLocations.length > 0 ? (
-              <ul className="world-map-ip-list">
-                {trackedIpLocations.map((location) => (
-                  <li key={`tracked-${location.ip}`}>
-                    <button
-                      type="button"
-                      className={cn('world-map-ip-item', location.ip === activeTrackedIpLocation?.ip && 'is-active')}
-                      onClick={() => handleTrackedIpSelect(location, true)}
-                      onMouseEnter={() => handleTrackedIpSelect(location)}
-                      onFocus={() => handleTrackedIpSelect(location)}
-                      onKeyDown={(event) => handleListKeyboardNavigation(event, () => handleTrackedIpSelect(location, true))}
-                    >
-                      <span>{formatIpLabel(location.ip)}</span>
-                      <strong>{location.country}</strong>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
+              {lookupError ? <p className="world-map-ip-error">{lookupError}</p> : null}
 
-          <ul className="world-map-feed">
-            {topNodes.map((node) => (
-              <li key={node.id}>
-                <button
-                  type="button"
-                  className={cn('world-map-feed-item', node.id === activeNode.id && 'is-active')}
-                  onClick={() => handleNodeSelect(node, true)}
-                  onMouseEnter={() => handleNodeSelect(node)}
-                  onFocus={() => handleNodeSelect(node)}
-                  onKeyDown={(event) => handleListKeyboardNavigation(event, () => handleNodeSelect(node, true))}
-                >
-                  <span>{node.label}</span>
-                  <strong>{metricFormatter.format(node.value)}</strong>
-                </button>
-              </li>
-            ))}
-          </ul>
+              {trackedIpLocations.length > 0 ? (
+                <ul className="world-map-ip-list">
+                  {trackedIpLocations.map((location) => (
+                    <li key={`tracked-${location.ip}`}>
+                      <button
+                        type="button"
+                        className={cn('world-map-ip-item', location.ip === activeTrackedIpLocation?.ip && 'is-active')}
+                        onClick={() => handleTrackedIpSelect(location, true)}
+                        onMouseEnter={() => handleTrackedIpSelect(location)}
+                        onFocus={() => handleTrackedIpSelect(location)}
+                        onKeyDown={(event) => handleListKeyboardNavigation(event, () => handleTrackedIpSelect(location, true))}
+                      >
+                        <span>{formatIpLabel(location.ip)}</span>
+                        <strong>{location.country}</strong>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+
+          {isNodePluginEnabled ? (
+            <ul className="world-map-feed">
+              {topNodes.map((node) => (
+                <li key={node.id}>
+                  <button
+                    type="button"
+                    className={cn('world-map-feed-item', node.id === activeNode?.id && 'is-active')}
+                    onClick={() => handleNodeSelect(node, true)}
+                    onMouseEnter={() => handleNodeSelect(node)}
+                    onFocus={() => handleNodeSelect(node)}
+                    onKeyDown={(event) => handleListKeyboardNavigation(event, () => handleNodeSelect(node, true))}
+                  >
+                    <span>{node.label}</span>
+                    <strong>{metricFormatter.format(node.value)}</strong>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </aside>
       </div>
     </article>

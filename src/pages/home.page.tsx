@@ -8,8 +8,8 @@ import { Section } from '~/components/UI/Section';
 import { StatCard } from '~/components/UI/StatCard';
 import { TextField } from '~/components/UI/TextField';
 import { UiButton } from '~/components/UI/UiButton';
-import { WorldActivityMap as WorldActivityMapNew } from '~/components/UI/WorldActivityMap';
-import { WorldActivityMap as WorldActivityMapLegacy } from '~/components/UI/WorldActivityMapLegacy';
+import { WorldActivityMap as WorldActivityMapNew } from '~/components/UI/map/WorldActivityMap';
+import { WorldActivityMap as WorldActivityMapLegacy } from '~/components/UI/map/WorldActivityMapLegacy';
 import { cn } from '~/lib/utils';
 import { THEME_CONFIG, THEME_STORAGE_KEY, applyTheme, normalizeTheme, themeKeys, type ThemeKey } from '~/config/theme-config';
 

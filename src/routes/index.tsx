@@ -4,6 +4,9 @@ import MainLayout from '~/components/Layout/MainLayout';
 
 const HomePage = lazy(() => import('~/pages/home.page'));
 const IntroPage = lazy(() => import('~/pages/intro.page'));
+const CryptoPage = lazy(() => import('~/pages/crypto.page'));
+const ForexPage = lazy(() => import('~/pages/forex.page'));
+const MemecoinPage = lazy(() => import('~/pages/memecoin.page'));
 
 const MainRoute = [
   {
@@ -18,6 +21,27 @@ const MainRoute = [
     icon: '',
     path: '/intro',
     component: IntroPage,
+    Layout: MainLayout,
+  },
+  {
+    name: 'Crypto',
+    icon: '',
+    path: '/crypto',
+    component: CryptoPage,
+    Layout: MainLayout,
+  },
+  {
+    name: 'Forex',
+    icon: '',
+    path: '/forex',
+    component: ForexPage,
+    Layout: MainLayout,
+  },
+  {
+    name: 'Memecoin',
+    icon: '',
+    path: '/memecoin',
+    component: MemecoinPage,
     Layout: MainLayout,
   },
 ];

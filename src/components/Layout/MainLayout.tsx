@@ -8,7 +8,9 @@ import { UiSelect } from '~/components/UI/UiSelect';
 const NAV_ITEMS = [
   { label: 'Home', to: '/' },
   { label: 'Intro', to: '/intro' },
-  { label: 'Test', to: '/test' },
+  { label: 'Crypto', to: '/crypto' },
+  { label: 'Forex', to: '/forex' },
+  { label: 'Memecoin', to: '/memecoin' },
 ];
 
 const Header: React.FC = () => {
