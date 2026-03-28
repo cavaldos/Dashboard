@@ -1,6 +1,14 @@
 
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
+import {
+  FONT_FAMILY_CONFIG,
+  FONT_FAMILY_STORAGE_KEY,
+  applyFontFamily,
+  fontFamilyKeys,
+  normalizeFontFamily,
+  type FontFamilyKey,
+} from '~/config/font-family-config';
 import { FONT_SIZE_CONFIG, FONT_SIZE_STORAGE_KEY, applyFontSize, fontSizeKeys, normalizeFontSize, type FontSizeKey } from '~/config/font-size-config';
 import { THEME_CONFIG, THEME_STORAGE_KEY, applyTheme, normalizeTheme, themeKeys, type ThemeKey } from '~/config/theme-config';
 import { UiSelect } from '~/components/UI/UiSelect';
@@ -11,6 +19,7 @@ const NAV_ITEMS = [
   { label: 'Crypto', to: '/crypto' },
   { label: 'Forex', to: '/forex' },
   { label: 'Memecoin', to: '/memecoin' },
+  { label: 'NewsTrade', to: '/newstrade' },
 ];
 
 const Header: React.FC = () => {
@@ -31,6 +40,13 @@ const Header: React.FC = () => {
 
     return normalizeFontSize(window.localStorage.getItem(FONT_SIZE_STORAGE_KEY));
   });
+  const [activeFontFamily, setActiveFontFamily] = useState<FontFamilyKey>(() => {
+    if (typeof window === 'undefined') {
+      return FONT_FAMILY_CONFIG.defaultFamily;
+    }
+
+    return normalizeFontFamily(window.localStorage.getItem(FONT_FAMILY_STORAGE_KEY));
+  });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement | null>(null);
 
@@ -49,6 +65,14 @@ const Header: React.FC = () => {
       window.localStorage.setItem(FONT_SIZE_STORAGE_KEY, activeFontSize);
     }
   }, [activeFontSize]);
+
+  useEffect(() => {
+    applyFontFamily(activeFontFamily);
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(FONT_FAMILY_STORAGE_KEY, activeFontFamily);
+    }
+  }, [activeFontFamily]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -187,6 +211,19 @@ const Header: React.FC = () => {
                   {FONT_SIZE_CONFIG.sizes[sizeKey].label}
                 </button>
               ))}
+            </div>
+
+            <div className="app-setting-row">
+              <span className="app-setting-label">Font</span>
+              <UiSelect
+                value={activeFontFamily}
+                ariaLabel="Font family setting"
+                onChange={(value) => setActiveFontFamily(value as FontFamilyKey)}
+                options={fontFamilyKeys.map((fontFamilyKey) => ({
+                  value: fontFamilyKey,
+                  label: FONT_FAMILY_CONFIG.families[fontFamilyKey].label,
+                }))}
+              />
             </div>
           </div>
         </div>

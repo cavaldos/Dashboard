@@ -1,0 +1,448 @@
+.forex-shell {
+  padding-top: 24px;
+}
+
+.forex-layout .section {
+  margin-bottom: 24px;
+}
+
+.forex-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.forex-hero-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-bright) 82%, #ffffff 18%);
+  background:
+    linear-gradient(140deg, rgba(14, 26, 40, 0.9), rgba(10, 16, 24, 0.92) 44%, rgba(19, 34, 52, 0.86)),
+    radial-gradient(circle at 12% 15%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 48%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
+    0 18px 28px -24px rgba(2, 8, 16, 0.88),
+    0 0 18px -14px color-mix(in srgb, var(--accent) 40%, transparent);
+  padding: 18px;
+}
+
+.forex-hero-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 26px,
+    color-mix(in srgb, var(--accent) 9%, transparent) 26px,
+    color-mix(in srgb, var(--accent) 9%, transparent) 27px
+  );
+  opacity: 0.32;
+}
+
+.forex-hero-kicker {
+  position: relative;
+  z-index: 1;
+  font-size: calc(10px + var(--font-size-offset));
+  text-transform: uppercase;
+  letter-spacing: 0.26em;
+  color: var(--text-dim);
+}
+
+.forex-hero-title {
+  position: relative;
+  z-index: 1;
+  margin-top: 8px;
+  font-family: var(--sans);
+  font-size: calc(40px + var(--font-size-offset));
+  line-height: 0.95;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.forex-hero-text {
+  position: relative;
+  z-index: 1;
+  margin-top: 10px;
+  max-width: 68ch;
+  line-height: 1.58;
+  font-size: calc(13px + var(--font-size-offset));
+  color: var(--text-secondary);
+}
+
+.forex-hero-badges {
+  position: relative;
+  z-index: 1;
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.forex-hero-metrics {
+  position: relative;
+  z-index: 1;
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.forex-hero-metrics dt {
+  font-size: calc(10px + var(--font-size-offset));
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+}
+
+.forex-hero-metrics dd {
+  margin-top: 5px;
+  font-size: calc(22px + var(--font-size-offset));
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+}
+
+.forex-hero-refresh {
+  position: relative;
+  z-index: 1;
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.forex-hero-refresh p {
+  font-size: calc(11px + var(--font-size-offset));
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.forex-pair-strip {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.forex-pair-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--table-border-soft);
+  background: rgba(8, 14, 24, 0.55);
+  padding: 10px 11px;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.forex-pair-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, #ffffff 55%);
+  background: rgba(10, 20, 32, 0.7);
+}
+
+.forex-pair-name {
+  font-size: calc(13px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+}
+
+.forex-pair-prev {
+  margin-top: 3px;
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.forex-pair-values {
+  text-align: right;
+}
+
+.forex-pair-values > p:first-child {
+  font-size: calc(16px + var(--font-size-offset));
+  line-height: 1;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+}
+
+.forex-pair-change {
+  margin-top: 4px;
+  font-size: calc(11px + var(--font-size-offset));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.forex-pair-change.is-up {
+  color: var(--green);
+}
+
+.forex-pair-change.is-down {
+  color: var(--red);
+}
+
+.forex-pair-change.is-flat {
+  color: var(--text-dim);
+}
+
+.forex-alert-stack .alert {
+  border-left-width: 3px;
+}
+
+.forex-board-grid {
+  gap: 12px;
+}
+
+.forex-panel-toolbar {
+  padding: 10px;
+  border-bottom: 1px solid var(--table-border-soft);
+}
+
+.forex-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.forex-chip-btn,
+.forex-news-btn {
+  border: 1px solid var(--border);
+  background: rgba(8, 14, 24, 0.7);
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  font-size: calc(11px + var(--font-size-offset));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 7px 9px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.forex-chip-btn:hover,
+.forex-news-btn:hover {
+  border-color: var(--border-bright);
+  color: var(--text-primary);
+}
+
+.forex-chip-btn.is-active,
+.forex-news-btn.is-active {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.forex-event-list {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 580px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.forex-event-row {
+  border: 1px solid var(--table-border-soft);
+  background: rgba(7, 12, 20, 0.65);
+  padding: 10px;
+}
+
+.forex-event-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.forex-event-currency,
+.forex-event-time {
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.forex-event-title {
+  margin-top: 8px;
+  font-size: calc(13px + var(--font-size-offset));
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.forex-event-meta {
+  margin-top: 6px;
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.forex-central-grid {
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.forex-central-card {
+  border: 1px solid var(--table-border-soft);
+  background: rgba(8, 14, 24, 0.65);
+  padding: 10px;
+}
+
+.forex-central-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.forex-central-head p {
+  font-size: calc(16px + var(--font-size-offset));
+  line-height: 1;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+
+.forex-central-title {
+  margin-top: 8px;
+  min-height: 42px;
+  font-size: calc(12px + var(--font-size-offset));
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.forex-central-meta {
+  margin-top: 6px;
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.forex-news-toolbar {
+  margin-bottom: 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.forex-news-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.forex-news-grid.is-dual {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.forex-news-list {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 620px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.forex-news-item {
+  border: 1px solid var(--table-border-soft);
+  background: rgba(7, 12, 20, 0.64);
+  padding: 10px;
+}
+
+.forex-news-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.forex-news-title {
+  display: inline-block;
+  margin-top: 8px;
+  font-family: var(--sans);
+  font-size: calc(18px + var(--font-size-offset));
+  line-height: 1.22;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.forex-news-title:hover {
+  color: var(--accent);
+}
+
+.forex-news-summary {
+  margin-top: 7px;
+  line-height: 1.55;
+  font-size: calc(12px + var(--font-size-offset));
+  color: var(--text-secondary);
+}
+
+.forex-news-source {
+  margin-top: 8px;
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.forex-empty-state,
+.forex-table-empty {
+  padding: 14px;
+  font-size: calc(12px + var(--font-size-offset));
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.forex-table-empty {
+  text-align: center;
+}
+
+@media (max-width: 1200px) {
+  .forex-hero-grid,
+  .forex-news-grid.is-dual {
+    grid-template-columns: 1fr;
+  }
+
+  .forex-central-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .forex-shell {
+    padding-top: 12px;
+  }
+
+  .forex-hero-card {
+    padding: 14px;
+  }
+
+  .forex-hero-title {
+    font-size: calc(32px + var(--font-size-offset));
+  }
+
+  .forex-hero-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .forex-hero-refresh {
+    align-items: flex-start;
+  }
+
+  .forex-news-title {
+    font-size: calc(16px + var(--font-size-offset));
+  }
+}

@@ -1,0 +1,638 @@
+.newstrade-shell {
+  position: relative;
+}
+
+.newstrade-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 10% 16%, rgba(255, 116, 56, 0.1), transparent 32%),
+    radial-gradient(circle at 78% 4%, rgba(66, 184, 255, 0.09), transparent 34%),
+    radial-gradient(circle at 54% 92%, rgba(80, 255, 180, 0.07), transparent 42%);
+  z-index: 0;
+}
+
+.newstrade-container {
+  position: relative;
+  z-index: 1;
+}
+
+.newstrade-promo {
+  border: 1px solid rgba(66, 255, 159, 0.5);
+  background: linear-gradient(90deg, rgba(10, 28, 16, 0.95), rgba(8, 26, 18, 0.58));
+  color: #66f0b3;
+  padding: 9px 12px;
+  font-size: calc(11px + var(--font-size-offset));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.newstrade-command {
+  border: 1px solid color-mix(in srgb, var(--border-bright) 82%, #ffffff 18%);
+  background:
+    linear-gradient(180deg, rgba(7, 11, 18, 0.95), rgba(6, 10, 16, 0.88)),
+    linear-gradient(90deg, rgba(255, 82, 45, 0.07), transparent 44%, rgba(110, 210, 255, 0.06));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border-bright) 76%, #ffffff 24%),
+    0 0 22px -16px color-mix(in srgb, var(--accent) 48%, transparent);
+  margin-bottom: 12px;
+}
+
+.newstrade-command-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--table-border-soft);
+  padding: 14px;
+}
+
+.newstrade-kicker {
+  color: var(--text-secondary);
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.newstrade-command-head h1 {
+  font-family: var(--sans);
+  font-size: calc(30px + var(--font-size-offset));
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #ecf6ff;
+}
+
+.newstrade-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.newstrade-kpis span {
+  border: 1px solid var(--border);
+  background: rgba(8, 14, 21, 0.72);
+  color: var(--text-secondary);
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+}
+
+.newstrade-command-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px 12px;
+}
+
+.newstrade-filters {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.newstrade-filter-btn {
+  border: 1px solid var(--border);
+  background: rgba(10, 16, 23, 0.82);
+  color: var(--text-secondary);
+  font-size: calc(11px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.newstrade-filter-btn:hover {
+  border-color: var(--border-bright);
+  color: var(--text-primary);
+}
+
+.newstrade-filter-btn.is-active {
+  border-color: rgba(255, 171, 124, 0.62);
+  color: #ffcaa9;
+  background: rgba(255, 125, 58, 0.12);
+}
+
+.newstrade-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.newstrade-search span {
+  color: var(--text-dim);
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.newstrade-search input {
+  width: 250px;
+  border: 1px solid var(--border);
+  background: rgba(7, 12, 19, 0.9);
+  color: var(--text-primary);
+  padding: 8px 10px;
+  outline: none;
+  font-size: calc(11px + var(--font-size-offset));
+  letter-spacing: 0.07em;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.newstrade-search input:focus {
+  border-color: rgba(255, 171, 124, 0.62);
+  box-shadow: 0 0 0 1px rgba(255, 121, 58, 0.16);
+}
+
+.newstrade-search input::placeholder {
+  color: var(--text-dim);
+}
+
+.newstrade-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(240px, auto);
+  gap: 10px;
+}
+
+.newstrade-calendar {
+  margin-bottom: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-bright) 82%, #ffffff 18%);
+  background:
+    linear-gradient(180deg, rgba(7, 11, 18, 0.95), rgba(6, 10, 16, 0.9)),
+    linear-gradient(90deg, rgba(89, 173, 246, 0.06), transparent 50%, rgba(255, 150, 96, 0.07));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border-bright) 75%, #ffffff 25%),
+    0 0 18px -14px color-mix(in srgb, var(--accent) 56%, transparent);
+}
+
+.newstrade-calendar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid var(--table-border-soft);
+}
+
+.newstrade-calendar-head h2 {
+  color: #e7f3ff;
+  font-size: calc(23px + var(--font-size-offset));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.newstrade-calendar-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.newstrade-calendar-meta span {
+  border: 1px solid var(--border);
+  background: rgba(8, 14, 21, 0.72);
+  color: var(--text-secondary);
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+}
+
+.newstrade-calendar-hub-link {
+  border: 1px solid rgba(118, 199, 255, 0.56);
+  background: rgba(72, 145, 198, 0.14);
+  color: #bce5ff;
+  text-decoration: none;
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+}
+
+.newstrade-calendar-hub-link:hover {
+  border-color: rgba(182, 228, 255, 0.74);
+  color: #e5f5ff;
+}
+
+.newstrade-calendar-source-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--table-border-soft);
+  flex-wrap: wrap;
+}
+
+.newstrade-calendar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--table-border-soft);
+  flex-wrap: wrap;
+}
+
+.newstrade-calendar-tab {
+  border: 1px solid var(--border);
+  background: rgba(8, 14, 21, 0.8);
+  color: var(--text-secondary);
+  font-size: calc(11px + var(--font-size-offset));
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.newstrade-calendar-tab span {
+  border: 1px solid rgba(149, 171, 190, 0.32);
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: calc(9px + var(--font-size-offset));
+}
+
+.newstrade-calendar-tab:hover {
+  border-color: var(--border-bright);
+  color: var(--text-primary);
+}
+
+.newstrade-calendar-tab.is-active {
+  border-color: rgba(112, 200, 255, 0.66);
+  color: #c6e7ff;
+  background: rgba(64, 146, 205, 0.16);
+}
+
+.newstrade-calendar-table-wrap {
+  max-height: 560px;
+  overflow: auto;
+}
+
+.newstrade-calendar-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 930px;
+}
+
+.newstrade-calendar-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(8, 13, 20, 0.96);
+  text-align: left;
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--table-border-soft);
+  padding: 9px 10px;
+  font-weight: 400;
+}
+
+.newstrade-calendar-table td {
+  border-bottom: 1px solid var(--table-border-soft);
+  color: var(--text-primary);
+  font-size: calc(12px + var(--font-size-offset));
+  padding: 8px 10px;
+}
+
+.newstrade-calendar-table tr:hover td {
+  background: rgba(93, 174, 242, 0.06);
+}
+
+.newstrade-calendar-link {
+  color: #b5dcff;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(181, 220, 255, 0.35);
+}
+
+.newstrade-calendar-link:hover {
+  color: #def0ff;
+  border-bottom-color: rgba(222, 240, 255, 0.8);
+}
+
+.newstrade-calendar-source {
+  color: #99d7ff;
+  text-decoration: none;
+  font-size: calc(11px + var(--font-size-offset));
+  letter-spacing: 0.07em;
+}
+
+.newstrade-calendar-source:hover {
+  color: #d7efff;
+}
+
+.newstrade-impact-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  font-size: calc(9px + var(--font-size-offset));
+}
+
+.newstrade-impact-pill.is-high {
+  border-color: rgba(255, 126, 126, 0.58);
+  color: #ff9d9d;
+}
+
+.newstrade-impact-pill.is-medium {
+  border-color: rgba(255, 210, 126, 0.58);
+  color: #ffde9d;
+}
+
+.newstrade-impact-pill.is-low {
+  border-color: rgba(117, 227, 175, 0.58);
+  color: #9ff5cb;
+}
+
+.newstrade-impact-pill.is-holiday {
+  border-color: rgba(192, 206, 224, 0.56);
+  color: #dbe7f5;
+}
+
+.newstrade-calendar-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  padding: 14px 10px;
+}
+
+.newstrade-card {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--border-bright) 82%, #ffffff 18%);
+  background:
+    linear-gradient(180deg, rgba(10, 14, 22, 0.96), rgba(7, 11, 18, 0.94)),
+    linear-gradient(180deg, rgba(255, 107, 58, 0.05), transparent 20%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border-bright) 78%, #ffffff 22%),
+    inset 0 -16px 22px -18px rgba(250, 122, 75, 0.2),
+    0 0 16px -12px rgba(96, 184, 255, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  animation: newstrade-card-in 0.45s ease both;
+  animation-delay: calc(var(--nt-stagger) * 36ms);
+}
+
+.newstrade-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: linear-gradient(180deg, #ff6d3a, #68c8ff);
+  opacity: 0.8;
+}
+
+.newstrade-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, #ffffff 58%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 46%, #ffffff 54%),
+    inset 0 -16px 24px -18px rgba(255, 142, 94, 0.26),
+    0 0 18px -10px rgba(105, 191, 255, 0.42);
+}
+
+.newstrade-card.is-wide {
+  grid-column: span 2;
+}
+
+.newstrade-card.is-tall {
+  grid-row: span 2;
+}
+
+.newstrade-card-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--table-border-soft);
+  padding: 10px 12px;
+  background: rgba(5, 9, 14, 0.6);
+}
+
+.newstrade-card-head p {
+  color: var(--text-secondary);
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.newstrade-card-head h2 {
+  color: #e6f2ff;
+  font-size: calc(17px + var(--font-size-offset));
+  line-height: 1.1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.newstrade-live-chip {
+  border: 1px solid rgba(66, 255, 159, 0.4);
+  color: #67f2b4;
+  background: rgba(17, 61, 39, 0.42);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.newstrade-card-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.newstrade-item {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--table-border-soft);
+}
+
+.newstrade-item:hover {
+  background: rgba(89, 170, 240, 0.06);
+}
+
+.newstrade-item-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.newstrade-item-topline span,
+.newstrade-item-topline time {
+  color: var(--text-secondary);
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.newstrade-item p {
+  color: var(--text-primary);
+  font-size: calc(15px + var(--font-size-offset));
+  line-height: 1.34;
+  margin-bottom: 8px;
+}
+
+.newstrade-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.newstrade-tag {
+  border: 1px solid var(--border);
+  background: rgba(8, 14, 21, 0.7);
+  color: var(--text-secondary);
+  font-size: calc(9px + var(--font-size-offset));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 6px;
+}
+
+.newstrade-tag.is-alert {
+  border-color: rgba(255, 117, 117, 0.52);
+  color: #ff8e8e;
+}
+
+.newstrade-tag.is-conflict {
+  border-color: rgba(255, 92, 58, 0.52);
+  color: #ff9e73;
+}
+
+.newstrade-tag.is-macro {
+  border-color: rgba(99, 204, 255, 0.52);
+  color: #9fdbff;
+}
+
+.newstrade-tag.is-policy {
+  border-color: rgba(255, 202, 94, 0.54);
+  color: #ffd684;
+}
+
+.newstrade-tag.is-energy {
+  border-color: rgba(95, 255, 175, 0.5);
+  color: #99ffc9;
+}
+
+.newstrade-tag.is-fresh {
+  border-color: rgba(180, 199, 215, 0.44);
+  color: #d2dfeb;
+}
+
+.newstrade-tag.is-source {
+  border-color: rgba(108, 194, 255, 0.54);
+  color: #9ad8ff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.newstrade-tag.is-source:hover {
+  border-color: rgba(166, 219, 255, 0.76);
+  background: rgba(72, 148, 205, 0.18);
+  color: #d9f0ff;
+}
+
+.newstrade-card-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.newstrade-card-body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--scrollbar-thumb);
+}
+
+.newstrade-card-body::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+@keyframes newstrade-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1240px) {
+  .newstrade-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .newstrade-command-head,
+  .newstrade-command-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .newstrade-kpis {
+    justify-content: flex-start;
+  }
+
+  .newstrade-search {
+    width: 100%;
+  }
+
+  .newstrade-search input {
+    width: 100%;
+  }
+
+  .newstrade-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .newstrade-calendar-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .newstrade-calendar-meta {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .newstrade-grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+  }
+
+  .newstrade-card.is-wide,
+  .newstrade-card.is-tall {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+
+  .newstrade-command-head h1 {
+    font-size: calc(24px + var(--font-size-offset));
+  }
+}

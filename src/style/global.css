@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Comic+Relief:wght@400;700&family=Fira+Code:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Space+Mono:wght@400;700&family=Winky+Sans:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import './layout.css';
 @import './shared.css';
@@ -31,6 +31,10 @@
   --header-overlay-from: rgba(8, 12, 16, 0.95);
   --header-overlay-to: rgba(8, 12, 16, 0.82);
   --font-size-offset: 0px;
+  --scrollbar-size: 8px;
+  --scrollbar-track: color-mix(in srgb, var(--bg-base) 92%, transparent);
+  --scrollbar-thumb: color-mix(in srgb, var(--accent) 34%, var(--text-secondary) 66%);
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--accent) 55%, var(--text-secondary) 45%);
 }
 
 @layer base {
@@ -86,7 +90,32 @@ body::-webkit-scrollbar {
   display: none;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
 *::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
   background: transparent;
 }
 
@@ -114,4 +143,73 @@ body::after {
   50% {
     opacity: 0.3;
   }
+}
+
+.fear-greed-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-sm);
+}
+
+.fear-greed-svg {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+}
+
+.fear-greed-value {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 600;
+  fill: var(--text-primary);
+}
+
+.fear-greed-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  fill: var(--text-secondary);
+}
+
+.fear-greed-label-text {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: var(--spacing-xs);
+}
+
+.wm-chart-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+}
+
+.price-chart {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.price-chart-svg {
+  width: 100%;
+  height: auto;
+}
+
+.price-chart-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.price-chart-change {
+  font-weight: 600;
 }

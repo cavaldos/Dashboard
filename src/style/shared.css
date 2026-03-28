@@ -77,7 +77,7 @@
 .wm-grid-shell {
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-color: rgba(106, 138, 154, 0.45) transparent;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 .wm-grid-shell::-webkit-scrollbar {
@@ -86,16 +86,16 @@
 }
 
 .wm-grid-shell::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--scrollbar-track);
 }
 
 .wm-grid-shell::-webkit-scrollbar-thumb {
-  background: rgba(106, 138, 154, 0.38);
+  background: var(--scrollbar-thumb);
   border-radius: 999px;
 }
 
 .wm-grid-shell::-webkit-scrollbar-thumb:hover {
-  background: rgba(106, 138, 154, 0.56);
+  background: var(--scrollbar-thumb-hover);
 }
 
 .wm-grid {
@@ -241,16 +241,16 @@
 }
 
 .wm-panel-body::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--scrollbar-track);
 }
 
 .wm-panel-body::-webkit-scrollbar-thumb {
-  background: rgba(106, 138, 154, 0.35);
+  background: var(--scrollbar-thumb);
   border-radius: 999px;
 }
 
 .wm-panel-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(106, 138, 154, 0.55);
+  background: var(--scrollbar-thumb-hover);
 }
 
 .grid-4 {
@@ -999,7 +999,11 @@
 
 .world-map-ip-list::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(108, 132, 152, 0.38);
+  background: var(--scrollbar-thumb);
+}
+
+.world-map-ip-list::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 .world-map-ip-item {
@@ -1051,7 +1055,11 @@
 
 .world-map-flight-list::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(108, 132, 152, 0.38);
+  background: var(--scrollbar-thumb);
+}
+
+.world-map-flight-list::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 .world-map-flight-item {
@@ -1103,7 +1111,11 @@
 
 .world-map-feed::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(108, 132, 152, 0.42);
+  background: var(--scrollbar-thumb);
+}
+
+.world-map-feed::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 .world-map-feed-item {

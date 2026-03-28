@@ -7,6 +7,7 @@ const IntroPage = lazy(() => import('~/pages/intro.page'));
 const CryptoPage = lazy(() => import('~/pages/crypto.page'));
 const ForexPage = lazy(() => import('~/pages/forex.page'));
 const MemecoinPage = lazy(() => import('~/pages/memecoin.page'));
+const NewstradePage = lazy(() => import('~/pages/newstrade.page'));
 
 const MainRoute = [
   {
@@ -42,6 +43,13 @@ const MainRoute = [
     icon: '',
     path: '/memecoin',
     component: MemecoinPage,
+    Layout: MainLayout,
+  },
+  {
+    name: 'NewsTrade',
+    icon: '',
+    path: '/newstrade',
+    component: NewstradePage,
     Layout: MainLayout,
   },
 ];
