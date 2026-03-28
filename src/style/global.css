@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+@import './layout.css';
+@import './shared.css';
+
+:root {
+  --bg-base: #080c10;
+  --bg-card: #0b1017;
+  --bg-card-hover: #0f1620;
+  --border: #1e3448;
+  --border-bright: #2a4a6b;
+  --accent: #4a9eff;
+  --accent-dim: #1a4a7a;
+  --accent-glow: rgba(74, 158, 255, 0.15);
+  --text-primary: #c8d8e8;
+  --text-secondary: #6a8a9a;
+  --text-dim: #3a5a6a;
+  --mono: 'Geist Mono', 'Share Tech Mono', monospace;
+  --sans: 'Rajdhani', sans-serif;
+  --green: #2aff8a;
+  --red: #ff4a4a;
+  --yellow: #ffcc44;
+  --bg-radial-1: rgba(10, 30, 60, 0.4);
+  --bg-radial-2: rgba(5, 20, 40, 0.3);
+  --green-soft: rgba(42, 255, 138, 0.3);
+  --red-soft: rgba(255, 74, 74, 0.3);
+  --red-muted: rgba(255, 74, 74, 0.1);
+  --red-shadow: rgba(255, 74, 74, 0.2);
+  --table-border-soft: rgba(30, 52, 72, 0.5);
+  --table-row-hover: rgba(74, 158, 255, 0.03);
+  --header-overlay-from: rgba(8, 12, 16, 0.95);
+  --header-overlay-to: rgba(8, 12, 16, 0.82);
+  --font-size-offset: 0px;
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+
+  body {
+    min-height: 100%;
+    font-family: var(--mono);
+    background: var(--bg-base);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    scrollbar-width: none;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, var(--bg-radial-1) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, var(--bg-radial-2) 0%, transparent 50%);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+#root {
+  min-height: 100%;
+}
+
+#root::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}

@@ -1,0 +1,266 @@
+.app-layout {
+  min-height: 100%;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, var(--header-overlay-from), var(--header-overlay-to)),
+    linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+  backdrop-filter: blur(8px);
+  -webkit-app-region: drag;
+}
+
+.app-header-inner {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.app-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 6px;
+  order: 0;
+  -webkit-app-region: no-drag;
+}
+
+.app-window-control {
+  width: 26px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.app-window-control:hover {
+  border-color: var(--border-bright);
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.app-window-control.is-minimize:hover,
+.app-window-control.is-minimize:focus-visible {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: rgba(255, 204, 68, 0.14);
+}
+
+.app-window-control.is-maximize:hover,
+.app-window-control.is-maximize:focus-visible {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(42, 255, 138, 0.14);
+}
+
+.app-window-control.is-close:hover,
+.app-window-control.is-close:focus-visible {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-muted);
+}
+
+.app-brand,
+.app-nav,
+.app-nav-compact,
+.app-nav-link,
+.app-github-link,
+.app-settings,
+.app-settings-btn,
+.app-settings-panel,
+.app-font-btn,
+.app-window-controls,
+.app-window-control,
+.ui-selectbox,
+.ui-selectbox * {
+  -webkit-app-region: no-drag;
+}
+
+.app-brand {
+  order: 1;
+  font-family: var(--sans);
+  font-size: calc(16px + var(--font-size-offset));
+  letter-spacing: 0.14em;
+  color: var(--text-primary);
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.app-brand:hover {
+  color: var(--accent);
+}
+
+.app-nav {
+  order: 2;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.app-nav-compact {
+  display: none;
+  order: 2;
+  flex: 0 0 172px;
+  width: 172px;
+}
+
+.app-nav-compact .ui-selectbox,
+.app-setting-row .ui-selectbox {
+  width: 100%;
+}
+
+.app-nav-link,
+.app-github-link,
+.app-settings-btn,
+.app-font-btn {
+  font-family: var(--mono);
+  font-size: calc(11px + var(--font-size-offset));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  padding: 7px 12px;
+  transition: all 0.15s;
+}
+
+.app-nav-link:hover,
+.app-github-link:hover,
+.app-settings-btn:hover,
+.app-font-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-bright);
+}
+
+.app-nav-link.is-active {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: var(--accent-glow);
+}
+
+.app-github-link {
+  order: 3;
+  margin-left: auto;
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}
+
+.app-github-link:hover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.app-settings {
+  order: 4;
+  position: relative;
+}
+
+.app-settings-btn,
+.app-font-btn {
+  background: transparent;
+  cursor: pointer;
+}
+
+.app-settings-btn.is-active,
+.app-font-btn.is-active {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: var(--accent-glow);
+}
+
+.app-settings-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: none;
+  min-width: 280px;
+  padding: 10px;
+  border: 1px solid var(--border-bright);
+  background: linear-gradient(180deg, var(--bg-card), var(--bg-base));
+  box-shadow: 0 0 14px var(--accent-glow), 0 14px 28px rgba(2, 8, 16, 0.5);
+  z-index: 1200;
+}
+
+.app-settings-panel.is-open {
+  display: grid;
+  gap: 8px;
+}
+
+.app-font-size-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.app-setting-row {
+  display: grid;
+  gap: 6px;
+}
+
+.app-setting-label {
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+@media (max-width: 1200px) {
+  .app-header-inner {
+    flex-wrap: nowrap;
+  }
+
+  .app-nav {
+    display: none;
+  }
+
+  .app-nav-compact {
+    display: block;
+    width: 172px;
+    max-width: 172px;
+    flex: 0 0 172px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-header-inner {
+    padding: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .app-nav-compact {
+    width: 100%;
+    max-width: none;
+    flex: 1 0 100%;
+  }
+
+  .app-settings-panel {
+    min-width: 220px;
+  }
+
+  .app-font-size-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
