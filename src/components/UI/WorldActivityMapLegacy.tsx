@@ -50,11 +50,22 @@ type TrackedIpLocation = {
   coordinates: Coordinates;
 };
 
-type OpenSkyStateVector = unknown[];
+type AirplanesLiveAircraft = {
+  hex?: string;
+  flight?: string | null;
+  r?: string | null;
+  lat?: number | null;
+  lon?: number | null;
+  gs?: number | null;
+  track?: number | null;
+  seen_pos?: number | null;
+  seen?: number | null;
+  alt_baro?: number | string | null;
+};
 
-type OpenSkyStatesResponse = {
-  time?: number;
-  states?: OpenSkyStateVector[] | null;
+type AirplanesLivePointResponse = {
+  now?: number;
+  ac?: AirplanesLiveAircraft[] | null;
 };
 
 type FlightSnapshot = {
@@ -122,8 +133,22 @@ const MAP_CONNECTIONS: MapConnection[] = [
 
 const IP_LOOKUP_PROVIDERS = [lookupFromFreeIpApi, lookupFromGeolocationDb] as const;
 
-const OPENSKY_STATES_URL = 'https://opensky-network.org/api/states/all';
-const FLIGHT_POLL_INTERVAL_MS = 15000;
+const AIRPLANES_LIVE_POINT_URL = 'https://api.airplanes.live/v2/point';
+const AIRPLANES_LIVE_QUERY_POINTS: Coordinates[] = [
+  [-74.006, 40.7128],
+  [-118.2437, 34.0522],
+  [-46.6333, -23.5505],
+  [-0.1276, 51.5072],
+  [55.2708, 25.2048],
+  [103.8198, 1.3521],
+  [139.6917, 35.6895],
+  [151.2093, -33.8688],
+];
+const AIRPLANES_LIVE_QUERY_RADIUS_NM = 250;
+const KNOT_TO_METERS_PER_SECOND = 0.514444;
+const FLIGHT_POLL_INTERVAL_MS = 60000;
+const FLIGHT_RATE_LIMIT_FALLBACK_MS = 120000;
+const FLIGHT_MAX_BACKOFF_MS = 10 * 60 * 1000;
 const MAX_VISIBLE_FLIGHT_TRACKS = 90;
 const MAX_FLIGHT_TRAIL_POINTS = 12;
 const FLIGHT_MIN_VELOCITY_MS = 45;
@@ -285,25 +310,34 @@ const lookupIpWithFallback = async (ip: string, signal: AbortSignal): Promise<Tr
   return null;
 };
 
-const parseOpenSkySnapshots = (payload: OpenSkyStatesResponse): FlightSnapshot[] => {
-  if (!Array.isArray(payload.states)) {
+const buildAirplanesLivePointUrl = (coordinates: Coordinates) => {
+  const [longitude, latitude] = coordinates;
+  return `${AIRPLANES_LIVE_POINT_URL}/${latitude}/${longitude}/${AIRPLANES_LIVE_QUERY_RADIUS_NM}`;
+};
+
+const parseAirplanesLiveSnapshots = (payload: AirplanesLivePointResponse): FlightSnapshot[] => {
+  if (!Array.isArray(payload.ac)) {
     return [];
   }
 
-  const fallbackTimestamp = typeof payload.time === 'number' ? payload.time : Math.floor(Date.now() / 1000);
+  const nowMs = typeof payload.now === 'number' && Number.isFinite(payload.now) ? payload.now : Date.now();
+  const fallbackTimestamp = Math.floor(nowMs / 1000);
 
-  const snapshots = payload.states.reduce<FlightSnapshot[]>((accumulator, state) => {
-    if (!Array.isArray(state)) {
-      return accumulator;
-    }
-
-    const icao24 = typeof state[0] === 'string' ? state[0].trim().toLowerCase() : '';
-    const longitude = typeof state[5] === 'number' && Number.isFinite(state[5]) ? state[5] : null;
-    const latitude = typeof state[6] === 'number' && Number.isFinite(state[6]) ? state[6] : null;
-    const velocity = typeof state[9] === 'number' && Number.isFinite(state[9]) ? state[9] : null;
-    const trueTrack = typeof state[10] === 'number' && Number.isFinite(state[10]) ? state[10] : null;
-    const lastContact = typeof state[4] === 'number' && Number.isFinite(state[4]) ? state[4] : fallbackTimestamp;
-    const onGround = state[8] === true;
+  const snapshots = payload.ac.reduce<FlightSnapshot[]>((accumulator, aircraft) => {
+    const icao24 = typeof aircraft.hex === 'string' ? aircraft.hex.trim().toLowerCase() : '';
+    const longitude = typeof aircraft.lon === 'number' && Number.isFinite(aircraft.lon) ? aircraft.lon : null;
+    const latitude = typeof aircraft.lat === 'number' && Number.isFinite(aircraft.lat) ? aircraft.lat : null;
+    const groundSpeedKnots = typeof aircraft.gs === 'number' && Number.isFinite(aircraft.gs) ? aircraft.gs : null;
+    const velocity = groundSpeedKnots === null ? null : groundSpeedKnots * KNOT_TO_METERS_PER_SECOND;
+    const trueTrack = typeof aircraft.track === 'number' && Number.isFinite(aircraft.track) ? aircraft.track : null;
+    const seenSeconds =
+      typeof aircraft.seen_pos === 'number' && Number.isFinite(aircraft.seen_pos)
+        ? aircraft.seen_pos
+        : typeof aircraft.seen === 'number' && Number.isFinite(aircraft.seen)
+          ? aircraft.seen
+          : null;
+    const lastContact = seenSeconds === null ? fallbackTimestamp : Math.floor((nowMs - Math.max(0, seenSeconds) * 1000) / 1000);
+    const onGround = typeof aircraft.alt_baro === 'string' && aircraft.alt_baro.toLowerCase() === 'ground';
 
     if (!icao24 || longitude === null || latitude === null || onGround) {
       return accumulator;
@@ -313,8 +347,13 @@ const parseOpenSkySnapshots = (payload: OpenSkyStatesResponse): FlightSnapshot[]
       return accumulator;
     }
 
-    const callsign = typeof state[1] === 'string' && state[1].trim().length > 0 ? state[1].trim() : icao24.toUpperCase();
-    const originCountry = typeof state[2] === 'string' && state[2].trim().length > 0 ? state[2].trim() : 'Unknown';
+    const callsign =
+      typeof aircraft.flight === 'string' && aircraft.flight.trim().length > 0
+        ? aircraft.flight.trim()
+        : typeof aircraft.r === 'string' && aircraft.r.trim().length > 0
+          ? aircraft.r.trim()
+          : icao24.toUpperCase();
+    const originCountry = 'Unknown';
 
     accumulator.push({
       icao24,
@@ -332,6 +371,30 @@ const parseOpenSkySnapshots = (payload: OpenSkyStatesResponse): FlightSnapshot[]
   snapshots.sort((left, right) => (right.velocity ?? 0) - (left.velocity ?? 0));
 
   return snapshots;
+};
+
+const dedupeFlightSnapshots = (snapshots: FlightSnapshot[]) => {
+  const snapshotByIcao = new Map<string, FlightSnapshot>();
+
+  for (const snapshot of snapshots) {
+    const existingSnapshot = snapshotByIcao.get(snapshot.icao24);
+
+    if (!existingSnapshot) {
+      snapshotByIcao.set(snapshot.icao24, snapshot);
+      continue;
+    }
+
+    if (snapshot.lastContact > existingSnapshot.lastContact) {
+      snapshotByIcao.set(snapshot.icao24, snapshot);
+      continue;
+    }
+
+    if (snapshot.lastContact === existingSnapshot.lastContact && (snapshot.velocity ?? 0) > (existingSnapshot.velocity ?? 0)) {
+      snapshotByIcao.set(snapshot.icao24, snapshot);
+    }
+  }
+
+  return [...snapshotByIcao.values()];
 };
 
 const appendTrailPoint = (trail: Coordinates[], nextPoint: Coordinates) => {
@@ -416,6 +479,30 @@ const formatSyncClock = (timestamp: number | null) => {
   return new Date(timestamp).toLocaleTimeString([], { hour12: false });
 };
 
+const parseRetryAfterMs = (retryAfterHeader: string | null) => {
+  if (!retryAfterHeader) {
+    return null;
+  }
+
+  const retryAfterSeconds = Number(retryAfterHeader);
+
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+    return Math.round(retryAfterSeconds * 1000);
+  }
+
+  const retryTimestamp = Date.parse(retryAfterHeader);
+
+  if (Number.isFinite(retryTimestamp)) {
+    const remainingMs = retryTimestamp - Date.now();
+
+    if (remainingMs > 0) {
+      return remainingMs;
+    }
+  }
+
+  return null;
+};
+
 const getGeographyName = (geo: unknown) => {
   if (typeof geo !== 'object' || geo === null) {
     return 'Unknown';
@@ -466,7 +553,7 @@ export const WorldActivityMap = () => {
   const [trackedIpLocations, setTrackedIpLocations] = useState<TrackedIpLocation[]>([]);
   const [activeTrackedIp, setActiveTrackedIp] = useState<string | null>(null);
 
-  const [isFlightsEnabled, setIsFlightsEnabled] = useState(true);
+  const [isFlightsEnabled, setIsFlightsEnabled] = useState(false);
   const [isFlightsSyncing, setIsFlightsSyncing] = useState(false);
   const [flightSyncError, setFlightSyncError] = useState('');
   const [flightTracks, setFlightTracks] = useState<FlightTrack[]>([]);
@@ -543,10 +630,26 @@ export const WorldActivityMap = () => {
 
     let isMounted = true;
     let isRequestInFlight = false;
+    let retryDelayMs = FLIGHT_POLL_INTERVAL_MS;
+    let syncTimeoutId: number | null = null;
     const activeControllers = new Set<AbortController>();
 
+    const scheduleNextSync = (delayMs: number) => {
+      if (!isMounted) {
+        return;
+      }
+
+      if (syncTimeoutId !== null) {
+        window.clearTimeout(syncTimeoutId);
+      }
+
+      syncTimeoutId = window.setTimeout(() => {
+        void syncFlights();
+      }, delayMs);
+    };
+
     const syncFlights = async () => {
-      if (isRequestInFlight) {
+      if (isRequestInFlight || !isMounted) {
         return;
       }
 
@@ -558,33 +661,82 @@ export const WorldActivityMap = () => {
         setIsFlightsSyncing(true);
       }
 
+      let retryAfterMs: number | null = null;
+
       try {
-        const response = await fetch(OPENSKY_STATES_URL, {
-          method: 'GET',
-          signal: controller.signal,
-          headers: {
-            Accept: 'application/json',
-          },
-        });
+        const feedResponses = await Promise.allSettled(
+          AIRPLANES_LIVE_QUERY_POINTS.map(async (coordinates) => {
+            const response = await fetch(buildAirplanesLivePointUrl(coordinates), {
+              method: 'GET',
+              signal: controller.signal,
+              headers: {
+                Accept: 'application/json',
+              },
+            });
 
-        if (response.status === 429) {
-          throw new Error('OpenSky rate-limited. Waiting for next sync window.');
+            return response;
+          }),
+        );
+
+        const snapshots: FlightSnapshot[] = [];
+        const unavailableStatuses = new Set<number>();
+        let hasSuccessfulResponse = false;
+        let hasRateLimit = false;
+
+        for (const feedResult of feedResponses) {
+          if (feedResult.status === 'rejected') {
+            if (feedResult.reason instanceof DOMException && feedResult.reason.name === 'AbortError') {
+              throw feedResult.reason;
+            }
+
+            continue;
+          }
+
+          const feedResponse = feedResult.value;
+
+          if (feedResponse.status === 429) {
+            hasRateLimit = true;
+            const endpointRetryAfterMs = parseRetryAfterMs(feedResponse.headers.get('Retry-After'));
+            retryAfterMs = Math.max(retryAfterMs ?? 0, endpointRetryAfterMs ?? FLIGHT_RATE_LIMIT_FALLBACK_MS);
+            continue;
+          }
+
+          if (!feedResponse.ok) {
+            unavailableStatuses.add(feedResponse.status);
+            continue;
+          }
+
+          const payload = (await feedResponse.json()) as AirplanesLivePointResponse;
+          snapshots.push(...parseAirplanesLiveSnapshots(payload));
+          hasSuccessfulResponse = true;
         }
 
-        if (!response.ok) {
-          throw new Error(`OpenSky unavailable (${response.status}).`);
-        }
+        if (!hasSuccessfulResponse) {
+          if (hasRateLimit) {
+            retryDelayMs = Math.min(
+              Math.max(retryAfterMs ?? FLIGHT_RATE_LIMIT_FALLBACK_MS, FLIGHT_POLL_INTERVAL_MS),
+              FLIGHT_MAX_BACKOFF_MS,
+            );
+            throw new Error(`airplanes.live rate-limited. Retrying in ${Math.ceil(retryDelayMs / 1000)}s.`);
+          }
 
-        const payload = (await response.json()) as OpenSkyStatesResponse;
-        const snapshots = parseOpenSkySnapshots(payload);
+          if (unavailableStatuses.size > 0) {
+            retryDelayMs = Math.min(retryDelayMs * 2, FLIGHT_MAX_BACKOFF_MS);
+            throw new Error(`airplanes.live unavailable (${[...unavailableStatuses][0]}).`);
+          }
+
+          retryDelayMs = Math.min(retryDelayMs * 2, FLIGHT_MAX_BACKOFF_MS);
+          throw new Error('airplanes.live unavailable.');
+        }
 
         if (!isMounted) {
           return;
         }
 
-        setFlightTracks((previousTracks) => mergeFlightTracks(previousTracks, snapshots));
+        setFlightTracks((previousTracks) => mergeFlightTracks(previousTracks, dedupeFlightSnapshots(snapshots)));
         setFlightSyncError('');
         setLastFlightSyncAt(Date.now());
+        retryDelayMs = FLIGHT_POLL_INTERVAL_MS;
       } catch (error) {
         if (!isMounted) {
           return;
@@ -594,25 +746,31 @@ export const WorldActivityMap = () => {
           return;
         }
 
-        setFlightSyncError(error instanceof Error ? error.message : 'Failed to sync flight data.');
+        if (retryAfterMs !== null) {
+          setFlightSyncError(`airplanes.live rate-limited. Retrying in ${Math.ceil(retryDelayMs / 1000)}s.`);
+        } else {
+          setFlightSyncError(error instanceof Error ? error.message : 'Failed to sync flight data.');
+        }
       } finally {
         activeControllers.delete(controller);
         isRequestInFlight = false;
 
         if (isMounted) {
           setIsFlightsSyncing(false);
+          scheduleNextSync(retryDelayMs);
         }
       }
     };
 
     void syncFlights();
-    const intervalId = window.setInterval(() => {
-      void syncFlights();
-    }, FLIGHT_POLL_INTERVAL_MS);
 
     return () => {
       isMounted = false;
-      window.clearInterval(intervalId);
+
+      if (syncTimeoutId !== null) {
+        window.clearTimeout(syncTimeoutId);
+      }
+
       activeControllers.forEach((controller) => controller.abort());
     };
   }, [isFlightsEnabled]);
@@ -1110,7 +1268,7 @@ export const WorldActivityMap = () => {
 
             <p className="world-map-flight-meta">
               {isFlightsEnabled
-                ? `OpenSky feed - ${flightTracks.length} aircraft - updated ${formatSyncClock(lastFlightSyncAt)}`
+                ? `airplanes.live feed - ${flightTracks.length} aircraft - updated ${formatSyncClock(lastFlightSyncAt)}`
                 : 'Flight overlay is paused.'}
             </p>
 

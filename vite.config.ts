@@ -8,6 +8,7 @@ const srcDir = fileURLToPath(new URL('./src', import.meta.url));
 
 export default defineConfig(async ({ mode }) => {
   const isAppMode = mode === 'app';
+  const port = Number(process.env.PORT) || 5173;
 
   const plugins: PluginOption[] = [
     react(),
@@ -49,9 +50,14 @@ export default defineConfig(async ({ mode }) => {
     },
     clearScreen: false,
     server: {
-      port: 5173,
-      open: true,
-      host: '0.0.0.0',
+      port,
+      strictPort: true,
+      host: true,
+    },
+    preview: {
+      port,
+      strictPort: true,
+      host: true,
     },
   };
 });
