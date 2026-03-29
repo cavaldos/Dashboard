@@ -5,12 +5,15 @@ import { Badge } from '~/components/UI/Badge';
 import { FeatureCard } from '~/components/UI/FeatureCard';
 import { LogLineItem } from '~/components/UI/LogLineItem';
 import { LogPanel } from '~/components/UI/LogPanel';
+import { NewsMonitorShowcase } from '~/components/UI/news/NewsMonitorShowcase';
 import { Section } from '~/components/UI/Section';
 import { StatCard } from '~/components/UI/StatCard';
 import { TextField } from '~/components/UI/TextField';
 import { UiButton } from '~/components/UI/UiButton';
 import { UiModal } from '~/components/UI/UiModal';
-import { UiSelect } from '~/components/UI/UiSelect';
+import { UiSelect, type UiSelectSize } from '~/components/UI/UiSelect';
+import { WorldActivityMap as WorldActivityMapNew } from '~/components/UI/map/WorldActivityMap';
+import { WorldActivityMap as WorldActivityMapLegacy } from '~/components/UI/map/WorldActivityMapLegacy';
 
 const catalog = [
   { id: 'overview', title: 'Overview', items: 'Section + Layout' },
@@ -20,9 +23,10 @@ const catalog = [
   { id: 'modal', title: 'Modal', items: 'Dialog + Actions' },
   { id: 'alerts', title: 'Alerts', items: '4 tones' },
   { id: 'cards', title: 'Cards', items: 'Feature + Stat' },
+  { id: 'maps', title: 'Maps', items: 'Advanced + Simple' },
+  { id: 'news', title: 'News Monitor', items: 'Ticker + Desk cards' },
   { id: 'logs', title: 'Logs', items: 'Panel + LogLine' },
   { id: 'table', title: 'Tables', items: 'Data grid demo' },
-  { id: 'composition', title: 'Composition', items: 'Combined UI' },
 ];
 
 type ToastTone = 'success' | 'error' | 'info' | 'warning';
@@ -80,6 +84,13 @@ const variantOptions = [
   { value: 'danger', label: 'Danger' },
 ];
 
+const selectSizeOptions: Array<{ value: UiSelectSize; label: string }> = [
+  { value: 'xs', label: 'Tag (XS)' },
+  { value: 'sm', label: 'Small' },
+  { value: 'md', label: 'Medium' },
+  { value: 'lg', label: 'Large' },
+];
+
 const tableRows: DemoTableRow[] = [
   { component: 'UiButton', category: 'Action', status: 'Stable', statusTone: 'green', usage: '42 files', owner: 'Frontend' },
   { component: 'LogPanel', category: 'Layout', status: 'Core', statusTone: 'blue', usage: '18 files', owner: 'Platform' },
@@ -109,12 +120,16 @@ const tableSortOptions: Array<{ value: TableSortKey; label: string }> = [
 const IntroPage = () => {
   const [toastPosition, setToastPosition] = useState<ToastPosition>('top-right');
   const [variant, setVariant] = useState('primary');
+  const [selectSize, setSelectSize] = useState<UiSelectSize>('md');
   const [tableSearch, setTableSearch] = useState('');
   const [tableCategory, setTableCategory] = useState('all');
   const [tableSort, setTableSort] = useState<TableSortKey>('component-asc');
   const [toasts, setToasts] = useState<DemoToast[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const timeoutIds = useRef<number[]>([]);
+  const introShellRef = useRef<HTMLElement | null>(null);
+  const introLayoutRef = useRef<HTMLDivElement | null>(null);
+  const introContentRef = useRef<HTMLDivElement | null>(null);
 
   const normalizedSearch = tableSearch.trim().toLowerCase();
   const filteredTableRows = tableRows.filter((row) => {
@@ -172,15 +187,75 @@ const IntroPage = () => {
     setToasts([]);
   };
 
+  const handleCatalogClick = (event: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    event.preventDefault();
+
+    const contentNode = introContentRef.current;
+
+    if (!contentNode) {
+      return;
+    }
+
+    const targetSection = contentNode.querySelector<HTMLElement>(`#${sectionId}`);
+
+    if (!targetSection) {
+      return;
+    }
+
+    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (window.location.hash !== `#${sectionId}`) {
+      window.history.replaceState(null, '', `#${sectionId}`);
+    }
+  };
+
   useEffect(() => {
     return () => {
       timeoutIds.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
     };
   }, []);
 
+  useEffect(() => {
+    const syncIntroViewportHeight = () => {
+      const shellNode = introShellRef.current;
+      const layoutNode = introLayoutRef.current;
+
+      if (!shellNode || !layoutNode) {
+        return;
+      }
+
+      const shellTopOffset = shellNode.getBoundingClientRect().top;
+      const shellHeight = Math.max(0, Math.floor(window.innerHeight - shellTopOffset));
+      const shellStyles = window.getComputedStyle(shellNode);
+      const shellPaddingTop = Number.parseFloat(shellStyles.paddingTop) || 0;
+      const shellPaddingBottom = Number.parseFloat(shellStyles.paddingBottom) || 0;
+      const layoutHeight = Math.max(0, Math.floor(shellHeight - shellPaddingTop - shellPaddingBottom));
+
+      shellNode.style.height = `${shellHeight}px`;
+      shellNode.style.minHeight = `${shellHeight}px`;
+      layoutNode.style.setProperty('--intro-viewport-height', `${layoutHeight}px`);
+    };
+
+    syncIntroViewportHeight();
+    window.addEventListener('resize', syncIntroViewportHeight);
+
+    const headerNode = document.querySelector<HTMLElement>('.app-header');
+    let headerResizeObserver: ResizeObserver | null = null;
+
+    if (typeof ResizeObserver !== 'undefined' && headerNode) {
+      headerResizeObserver = new ResizeObserver(syncIntroViewportHeight);
+      headerResizeObserver.observe(headerNode);
+    }
+
+    return () => {
+      window.removeEventListener('resize', syncIntroViewportHeight);
+      headerResizeObserver?.disconnect();
+    };
+  }, []);
+
   return (
-    <main className="ui-shell intro-shell">
-      <div className="ui-container intro-layout">
+    <main className="ui-shell intro-shell" ref={introShellRef}>
+      <div className="ui-container intro-layout" ref={introLayoutRef}>
         <aside className="intro-sidebar">
           <p className="intro-kicker">component library</p>
           <h1 className="intro-title">Components</h1>
@@ -190,7 +265,7 @@ const IntroPage = () => {
             <ul className="intro-nav-list">
               {catalog.map((section) => (
                 <li key={section.id}>
-                  <a href={`#${section.id}`} className="intro-nav-link">
+                  <a href={`#${section.id}`} className="intro-nav-link" onClick={(event) => handleCatalogClick(event, section.id)}>
                     <span>{section.title}</span>
                     <span className="intro-nav-meta">{section.items}</span>
                   </a>
@@ -200,7 +275,7 @@ const IntroPage = () => {
           </nav>
         </aside>
 
-        <div className="intro-content">
+        <div className="intro-content" ref={introContentRef}>
           <div id="overview">
             <Section label="// overview">
               <LogPanel title="UI kit status" padded>
@@ -208,7 +283,7 @@ const IntroPage = () => {
                   This page showcases all project components with examples you can reuse as templates in upcoming screens.
                 </p>
                 <div className="intro-chip-row">
-                  <Badge tone="blue">9 Core Blocks</Badge>
+                  <Badge tone="blue">11 Core Blocks</Badge>
                   <Badge tone="green">Reusable</Badge>
                   <Badge tone="dim">Production Ready</Badge>
                 </div>
@@ -259,9 +334,41 @@ const IntroPage = () => {
                   <TextField label="Component name" placeholder="UiButton" />
                   <TextField label="Use case" placeholder="Primary action in modal footer" />
                   <label className="field">
-                    <span>Variant</span>
-                    <UiSelect value={variant} options={variantOptions} onChange={setVariant} ariaLabel="Variant options" />
+                    <span>Select size</span>
+                    <UiSelect
+                      value={selectSize}
+                      options={selectSizeOptions}
+                      onChange={(value) => setSelectSize(value as UiSelectSize)}
+                      ariaLabel="Select size options"
+                    />
                   </label>
+                  <label className="field">
+                    <span>Variant</span>
+                    <UiSelect size={selectSize} value={variant} options={variantOptions} onChange={setVariant} ariaLabel="Variant options" />
+                  </label>
+
+                  <div className="intro-select-size-grid">
+                    <label className="field">
+                      <span>Tag (XS)</span>
+                      <UiSelect size="xs" value={variant} options={variantOptions} onChange={setVariant} ariaLabel="Tag size variant options" />
+                    </label>
+
+                    <label className="field">
+                      <span>Small</span>
+                      <UiSelect size="sm" value={variant} options={variantOptions} onChange={setVariant} ariaLabel="Small variant options" />
+                    </label>
+
+                    <label className="field">
+                      <span>Medium</span>
+                      <UiSelect size="md" value={variant} options={variantOptions} onChange={setVariant} ariaLabel="Medium variant options" />
+                    </label>
+
+                    <label className="field">
+                      <span>Large</span>
+                      <UiSelect size="lg" value={variant} options={variantOptions} onChange={setVariant} ariaLabel="Large variant options" />
+                    </label>
+                  </div>
+
                   <UiButton tone="primary" type="submit">
                     Submit example
                   </UiButton>
@@ -390,6 +497,28 @@ const IntroPage = () => {
             </Section>
           </div>
 
+          <div id="maps">
+            <Section label="// maps (advanced + simple)">
+              <div className="grid-2 intro-map-grid">
+                <WorldActivityMapNew />
+                <WorldActivityMapLegacy />
+              </div>
+            </Section>
+          </div>
+
+          <div id="news">
+            <Section label="// news monitor">
+              <LogPanel title="Screenshot-like news monitor" tags={[{ label: 'FIXED COLORS' }, { label: 'NO THEME', dim: true }]}>
+                <div className="intro-news-shotcase">
+                  <p className="intro-news-shotcase-note">
+                    Components below use a hard-coded color palette to match the screenshot style, independent from project theme variables.
+                  </p>
+                  <NewsMonitorShowcase />
+                </div>
+              </LogPanel>
+            </Section>
+          </div>
+
           <div id="logs">
             <Section label="// logs">
               <div className="grid-2">
@@ -412,7 +541,7 @@ const IntroPage = () => {
 
           <div id="table">
             <Section label="// tables">
-              <LogPanel title="Data table demo" tags={[{ label: 'SNAPSHOT' }]}> 
+              <LogPanel title="Data table demo" tags={[{ label: 'SNAPSHOT' }]}>
                 <div className="intro-table-toolbar">
                   <label className="field intro-table-search-field">
                     <span>Search components</span>
@@ -476,29 +605,6 @@ const IntroPage = () => {
             </Section>
           </div>
 
-          <div id="composition">
-            <Section label="// composition demo">
-              <div className="grid-2">
-                <FeatureCard
-                  title="Page Blueprint"
-                  body="Start with Section + LogPanel, then attach actions, alerts, and metrics for complete dashboard modules."
-                  status="READY"
-                  badge="START"
-                  badgeTone="blue"
-                />
-
-                <LogPanel title="Quick actions" padded>
-                  <div className="intro-demo-stack">
-                    <div className="btn-group">
-                      <UiButton tone="primary">Generate page</UiButton>
-                      <UiButton tone="ghost">Open docs</UiButton>
-                    </div>
-                    <AlertStrip tone="success" icon="OK" message="Intro page is now a complete showcase" />
-                  </div>
-                </LogPanel>
-              </div>
-            </Section>
-          </div>
         </div>
       </div>
 

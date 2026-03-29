@@ -994,7 +994,7 @@ export const WorldActivityMap = () => {
     <article className="world-map-shell" ref={mapShellRef}>
       <header className="world-map-topbar">
         <div>
-          <h3>Global Signal Map</h3>
+          <h3>Simple Map</h3>
           <p>Live 2D overlay of node traffic and event density.</p>
         </div>
 

@@ -5,11 +5,14 @@ import { cn } from '~/lib/utils';
 
 import type { SelectOption } from './types';
 
+export type UiSelectSize = 'xs' | 'sm' | 'md' | 'lg';
+
 type UiSelectProps = {
   value: string;
   options: SelectOption[];
   onChange: (value: string) => void;
   ariaLabel: string;
+  size?: UiSelectSize;
   className?: string;
 };
 
@@ -19,7 +22,28 @@ type MenuPosition = {
   width: number;
 };
 
-export const UiSelect = ({ value, options, onChange, ariaLabel, className }: UiSelectProps) => {
+const triggerSizeClassMap: Record<UiSelectSize, string> = {
+  xs: 'px-2 py-1.5 pr-6 text-[calc(10px+var(--font-size-offset))] bg-[length:4px_4px,4px_4px] bg-[position:calc(100%-12px)_50%,calc(100%-8px)_50%]',
+  sm: 'px-2.5 py-2 pr-7 text-[calc(11px+var(--font-size-offset))] bg-[length:5px_5px,5px_5px] bg-[position:calc(100%-14px)_50%,calc(100%-10px)_50%]',
+  md: 'px-3 py-2.5 pr-8 text-[calc(12px+var(--font-size-offset))] bg-[length:6px_6px,6px_6px] bg-[position:calc(100%-16px)_50%,calc(100%-11px)_50%]',
+  lg: 'px-3.5 py-3.5 pr-9 text-[calc(13px+var(--font-size-offset))] bg-[length:7px_7px,7px_7px] bg-[position:calc(100%-18px)_50%,calc(100%-12px)_50%]',
+};
+
+const optionSizeClassMap: Record<UiSelectSize, string> = {
+  xs: 'px-1.5 py-1 text-[calc(10px+var(--font-size-offset))]',
+  sm: 'px-2 py-1.5 text-[calc(11px+var(--font-size-offset))]',
+  md: 'px-2.5 py-2 text-[calc(12px+var(--font-size-offset))]',
+  lg: 'px-3 py-2.5 text-[calc(13px+var(--font-size-offset))]',
+};
+
+const markerSizeClassMap: Record<UiSelectSize, string> = {
+  xs: 'w-1.5',
+  sm: 'w-2',
+  md: 'w-2.5',
+  lg: 'w-3',
+};
+
+export const UiSelect = ({ value, options, onChange, ariaLabel, size = 'md', className }: UiSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const selectRef = useRef<HTMLDivElement | null>(null);
@@ -82,7 +106,10 @@ export const UiSelect = ({ value, options, onChange, ariaLabel, className }: UiS
       <button
         ref={triggerRef}
         type="button"
-        className="ui-selectbox-trigger w-full border border-[var(--accent-dim)] bg-[var(--bg-card)] bg-[linear-gradient(45deg,transparent_50%,var(--accent)_50%),linear-gradient(135deg,var(--accent)_50%,transparent_50%)] bg-[length:6px_6px,6px_6px] bg-[position:calc(100%-16px)_50%,calc(100%-11px)_50%] bg-no-repeat px-3 py-2.5 pr-8 text-left font-[var(--mono)] text-[calc(12px+var(--font-size-offset))] uppercase tracking-[0.16em] text-[var(--text-primary)] transition-[border-color,box-shadow,background-color] duration-200 hover:border-[var(--accent)] hover:bg-[var(--bg-card-hover)] hover:shadow-[0_0_10px_var(--accent-glow),inset_0_0_10px_var(--accent-glow)]"
+        className={cn(
+          'ui-selectbox-trigger w-full border border-[var(--accent-dim)] bg-[var(--bg-card)] bg-[linear-gradient(45deg,transparent_50%,var(--accent)_50%),linear-gradient(135deg,var(--accent)_50%,transparent_50%)] bg-no-repeat text-left font-[var(--mono)] uppercase tracking-[0.16em] text-[var(--text-primary)] transition-[border-color,box-shadow,background-color] duration-200 hover:border-[var(--accent)] hover:bg-[var(--bg-card-hover)] hover:shadow-[0_0_10px_var(--accent-glow),inset_0_0_10px_var(--accent-glow)]',
+          triggerSizeClassMap[size],
+        )}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
@@ -116,7 +143,8 @@ export const UiSelect = ({ value, options, onChange, ariaLabel, className }: UiS
                   role="option"
                   aria-selected={isActive}
                   className={cn(
-                    'ui-selectbox-option flex w-full items-center gap-2 border-b border-[var(--table-border-soft)] bg-transparent px-2.5 py-2 text-left font-[var(--mono)] text-[calc(12px+var(--font-size-offset))] uppercase tracking-[0.16em] text-[var(--text-secondary)] transition-colors duration-150 last:border-b-0 hover:bg-[var(--table-row-hover)] hover:text-[var(--text-primary)]',
+                    'ui-selectbox-option flex w-full items-center gap-2 border-b border-[var(--table-border-soft)] bg-transparent text-left font-[var(--mono)] uppercase tracking-[0.16em] text-[var(--text-secondary)] transition-colors duration-150 last:border-b-0 hover:bg-[var(--table-row-hover)] hover:text-[var(--text-primary)]',
+                    optionSizeClassMap[size],
                     isActive && 'is-active bg-[var(--accent-glow)] text-[var(--accent)]',
                   )}
                   onClick={() => {
@@ -124,7 +152,7 @@ export const UiSelect = ({ value, options, onChange, ariaLabel, className }: UiS
                     setIsOpen(false);
                   }}
                 >
-                  <span className="ui-selectbox-marker w-2.5 text-[var(--accent)]">{isActive ? '>' : ''}</span>
+                  <span className={cn('ui-selectbox-marker text-[var(--accent)]', markerSizeClassMap[size])}>{isActive ? '>' : ''}</span>
                   <span>{option.label}</span>
                 </button>
               );

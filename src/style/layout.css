@@ -1,8 +1,15 @@
 .app-layout {
-  min-height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .app-header {
+  flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -11,7 +18,16 @@
     linear-gradient(180deg, var(--header-overlay-from), var(--header-overlay-to)),
     linear-gradient(90deg, transparent, var(--accent-glow), transparent);
   backdrop-filter: blur(8px);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
   -webkit-app-region: drag;
+}
+
+.app-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 
 .app-header-inner {
@@ -21,6 +37,42 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  transition: padding 0.2s ease, gap 0.2s ease;
+}
+
+.app-header.is-condensed .app-header-inner {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  gap: 8px;
+}
+
+.app-header.is-condensed .app-brand {
+  font-size: calc(14px + var(--font-size-offset));
+  letter-spacing: 0.1em;
+}
+
+.app-header.is-condensed .app-nav {
+  gap: 6px;
+}
+
+.app-header.is-condensed .app-nav-link,
+.app-header.is-condensed .app-github-link,
+.app-header.is-condensed .app-settings-btn,
+.app-header.is-condensed .app-font-btn {
+  font-size: calc(10px + var(--font-size-offset));
+  letter-spacing: 0.14em;
+  padding: 3px 9px;
+}
+
+.app-header.is-condensed .app-window-controls {
+  gap: 4px;
+  margin-right: 4px;
+}
+
+.app-header.is-condensed .app-window-control {
+  width: 22px;
+  height: 18px;
+  font-size: 10px;
 }
 
 .app-window-controls {
@@ -243,6 +295,31 @@
 }
 
 @media (max-width: 900px) {
+  .app-header.is-condensed .app-header-inner {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .app-header.is-condensed .app-nav-link,
+  .app-header.is-condensed .app-github-link,
+  .app-header.is-condensed .app-settings-btn,
+  .app-header.is-condensed .app-font-btn {
+    font-size: calc(11px + var(--font-size-offset));
+    letter-spacing: 0.18em;
+    padding: 7px 12px;
+  }
+
+  .app-header.is-condensed .app-window-controls {
+    gap: 6px;
+    margin-right: 6px;
+  }
+
+  .app-header.is-condensed .app-window-control {
+    width: 26px;
+    height: 24px;
+    font-size: 12px;
+  }
+
   .app-header-inner {
     padding: 12px;
     gap: 10px;

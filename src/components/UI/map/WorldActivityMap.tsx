@@ -1669,7 +1669,7 @@ export const WorldActivityMap = ({ plugins = DEFAULT_WORLD_ACTIVITY_MAP_PLUGINS 
     <article className="world-map-shell" ref={mapShellRef}>
       <header className="world-map-topbar">
         <div>
-          <h3>Global Signal Map</h3>
+          <h3>Advanced Map</h3>
           <p>Live dark vector map with country, province, and city detail.</p>
         </div>
 

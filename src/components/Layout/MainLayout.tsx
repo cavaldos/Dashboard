@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   { label: 'NewsTrade', to: '/newstrade' },
 ];
 
-const Header: React.FC = () => {
+const Header: React.FC<{ isCondensed: boolean }> = ({ isCondensed }) => {
   const isElectron = typeof window !== 'undefined' && typeof window.electronAPI !== 'undefined';
   const location = useLocation();
   const navigate = useNavigate();
@@ -112,7 +112,7 @@ const Header: React.FC = () => {
     NAV_ITEMS.find((item) => (item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)))?.to ?? '/';
 
   return (
-    <header className="app-header">
+    <header className={`app-header${isCondensed ? ' is-condensed' : ''}`}>
       <div className="app-header-inner">
         {isElectron ? (
           <div className="app-window-controls" aria-label="Window controls">
@@ -233,10 +233,63 @@ const Header: React.FC = () => {
 };
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [isHeaderCondensed, setIsHeaderCondensed] = useState(false);
+
+  useEffect(() => {
+    const contentNode = contentRef.current;
+
+    if (!contentNode) {
+      return;
+    }
+
+    const applyHeaderState = (scrollTop: number) => {
+      const shouldCondense = scrollTop > 18;
+
+      setIsHeaderCondensed((previousValue) => {
+        if (previousValue === shouldCondense) {
+          return previousValue;
+        }
+
+        return shouldCondense;
+      });
+    };
+
+    const syncHeaderCondensedState = (event?: Event) => {
+      const eventTarget = event?.target;
+
+      if (eventTarget === contentNode) {
+        applyHeaderState(contentNode.scrollTop);
+        return;
+      }
+
+      if (eventTarget instanceof HTMLElement && eventTarget.classList.contains('intro-content')) {
+        applyHeaderState(eventTarget.scrollTop);
+      }
+    };
+
+    const introContentNode = contentNode.querySelector<HTMLElement>('.intro-content');
+
+    if (introContentNode) {
+      applyHeaderState(introContentNode.scrollTop);
+    } else {
+      applyHeaderState(contentNode.scrollTop);
+    }
+
+    contentNode.addEventListener('scroll', syncHeaderCondensedState, { passive: true, capture: true });
+
+    return () => {
+      contentNode.removeEventListener('scroll', syncHeaderCondensedState, true);
+    };
+  }, [location.pathname]);
+
   return (
     <div className="app-layout">
-      <Header />
-      {children}
+      <Header isCondensed={isHeaderCondensed} />
+      <div className="app-content" ref={contentRef}>
+        {children}
+      </div>
     </div>
   );
 };
