@@ -12,11 +12,8 @@ import {
 import { FONT_SIZE_CONFIG, FONT_SIZE_STORAGE_KEY, applyFontSize, fontSizeKeys, normalizeFontSize, type FontSizeKey } from '~/config/font-size-config';
 import { THEME_CONFIG, THEME_STORAGE_KEY, applyTheme, normalizeTheme, themeKeys, type ThemeKey } from '~/config/theme-config';
 import { UiSelect } from '~/components/UI/UiSelect';
+import MainRoute from '~/routes';
 
-const NAV_ITEMS = [
-  { label: 'Home', to: '/' },
-  { label: 'Intro', to: '/intro' },
-];
 
 const Header: React.FC<{ isCondensed: boolean }> = ({ isCondensed }) => {
   const isElectron = typeof window !== 'undefined' && typeof window.electronAPI !== 'undefined';
@@ -105,7 +102,7 @@ const Header: React.FC<{ isCondensed: boolean }> = ({ isCondensed }) => {
   };
 
   const activeNavValue =
-    NAV_ITEMS.find((item) => (item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)))?.to ?? '/';
+    MainRoute.find((item) => (item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)))?.path ?? '/';
 
   return (
     <header className={`app-header${isCondensed ? ' is-condensed' : ''}`}>
@@ -144,14 +141,14 @@ const Header: React.FC<{ isCondensed: boolean }> = ({ isCondensed }) => {
         </NavLink>
 
         <nav className="app-nav" aria-label="Main navigation">
-          {NAV_ITEMS.map((item) => (
+          {MainRoute.filter((route) => route.nav === true).map((route) => (
             <NavLink
-              key={item.to}
-              to={item.to}
+              key={route.path}
+              to={route.path}
               className={({ isActive }) => `app-nav-link${isActive ? ' is-active' : ''}`}
-              end={item.to === '/'}
+              end={route.path === '/'}
             >
-              {item.label}
+              {route.name}
             </NavLink>
           ))}
         </nav>
@@ -161,7 +158,7 @@ const Header: React.FC<{ isCondensed: boolean }> = ({ isCondensed }) => {
             value={activeNavValue}
             ariaLabel="Main navigation compact"
             onChange={(value) => navigate(value)}
-            options={NAV_ITEMS.map((item) => ({ value: item.to, label: item.label }))}
+            options={MainRoute.filter((route) => route.nav === true).map((route) => ({ value: route.path, label: route.name }))}
           />
         </div>
 

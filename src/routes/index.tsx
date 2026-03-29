@@ -12,6 +12,7 @@ const MainRoute = [
     path: '/',
     component: HomePage,
     Layout: MainLayout,
+    nav: true, 
   },
   {
     name: 'Intro',
@@ -19,6 +20,7 @@ const MainRoute = [
     path: '/intro',
     component: IntroPage,
     Layout: MainLayout,
+    nav: true,
   },
 ];
 
