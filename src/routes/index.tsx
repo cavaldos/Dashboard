@@ -4,6 +4,7 @@ import MainLayout from '~/components/Layout/MainLayout';
 
 const HomePage = lazy(() => import('~/pages/home.page'));
 const IntroPage = lazy(() => import('~/pages/intro.page'));
+const TokenFeedPage = lazy(() => import('~/pages/tokenFeed.page'));
 
 const MainRoute = [
   {
@@ -19,6 +20,14 @@ const MainRoute = [
     icon: '',
     path: '/intro',
     component: IntroPage,
+    Layout: MainLayout,
+    nav: true,
+  },
+  {
+    name: 'Token Feed',
+    icon: '',
+    path: '/token-feed',
+    component: TokenFeedPage,
     Layout: MainLayout,
     nav: true,
   },

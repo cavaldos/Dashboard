@@ -53,6 +53,19 @@ export default defineConfig(async ({ mode }) => {
       port,
       strictPort: true,
       host: true,
+      proxy: {
+        '/api/gmgn': {
+          target: 'https://gmgn.ai',
+          changeOrigin: true,
+          rewrite: (p: string) => p.replace(/^\/api\/gmgn/, ''),
+          headers: {
+            'Accept': 'application/json',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            'Referer': 'https://gmgn.ai/?chain=sol',
+          },
+        },
+      },
     },
     preview: {
       port,
