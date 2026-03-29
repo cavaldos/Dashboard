@@ -3,6 +3,7 @@ import '~/style/intro.css';
 import { AlertStrip } from '~/components/UI/AlertStrip';
 import { Badge } from '~/components/UI/Badge';
 import { FeatureCard } from '~/components/UI/FeatureCard';
+import { LinkPreviewPanel, type LinkPreviewItem } from '~/components/UI/LinkPreviewPanel';
 import { LogLineItem } from '~/components/UI/LogLineItem';
 import { LogPanel } from '~/components/UI/LogPanel';
 import { NewsMonitorShowcase } from '~/components/UI/news/NewsMonitorShowcase';
@@ -20,6 +21,7 @@ const catalog = [
   { id: 'typography', title: 'Typography', items: 'Titles + Body' },
   { id: 'button-badge', title: 'Buttons & Badges', items: '7 samples' },
   { id: 'forms', title: 'Forms', items: 'TextField + Inputs' },
+  { id: 'link-preview', title: 'Link Preview', items: 'Hover + snapshot' },
   { id: 'modal', title: 'Modal', items: 'Dialog + Actions' },
   { id: 'alerts', title: 'Alerts', items: '4 tones' },
   { id: 'cards', title: 'Cards', items: 'Feature + Stat' },
@@ -115,6 +117,51 @@ const tableSortOptions: Array<{ value: TableSortKey; label: string }> = [
   { value: 'usage-desc', label: 'Usage high-low' },
   { value: 'usage-asc', label: 'Usage low-high' },
   { value: 'owner-asc', label: 'Owner A-Z' },
+];
+
+const hoverPreviewLinks: LinkPreviewItem[] = [
+  {
+    id: 'github-cavaldos',
+    label: 'GitHub / cavaldos',
+    description: 'Requested profile preview example',
+    url: 'https://github.com/cavaldos',
+    previewMode: 'snapshot',
+    snapshotUrl: 'https://image.thum.io/get/fullpage/width/1200/https://github.com/cavaldos',
+    snapshotThumbUrl: 'https://image.thum.io/get/width/640/https://github.com/cavaldos',
+  },
+  {
+    id: 'reuters-world',
+    label: 'Reuters World',
+    description: 'Global breaking headlines',
+    url: 'https://www.reuters.com/world/',
+    previewMode: 'snapshot',
+    snapshotUrl: 'https://image.thum.io/get/fullpage/width/1200/https://www.reuters.com/world/',
+    snapshotThumbUrl: 'https://image.thum.io/get/width/640/https://www.reuters.com/world/',
+  },
+  {
+    id: 'bloomberg-markets',
+    label: 'Bloomberg Markets',
+    description: 'Market moves and analysis',
+    url: 'https://www.bloomberg.com/markets',
+    previewMode: 'snapshot',
+    snapshotUrl: 'https://image.thum.io/get/fullpage/width/1200/https://www.bloomberg.com/markets',
+    snapshotThumbUrl: 'https://image.thum.io/get/width/640/https://www.bloomberg.com/markets',
+  },
+  {
+    id: 'coindesk',
+    label: 'CoinDesk',
+    description: 'Crypto and digital asset news',
+    url: 'https://www.coindesk.com/',
+    previewMode: 'snapshot',
+    snapshotUrl: 'https://image.thum.io/get/fullpage/width/1200/https://www.coindesk.com/',
+    snapshotThumbUrl: 'https://image.thum.io/get/width/640/https://www.coindesk.com/',
+  },
+  {
+    id: 'hacker-news',
+    label: 'Hacker News',
+    description: 'Tech news community feed',
+    url: 'https://news.ycombinator.com/',
+  },
 ];
 
 const IntroPage = () => {
@@ -373,6 +420,17 @@ const IntroPage = () => {
                     Submit example
                   </UiButton>
                 </form>
+              </LogPanel>
+            </Section>
+          </div>
+
+          <div id="link-preview">
+            <Section label="// link preview">
+              <LogPanel title="Hover to open website quick view" padded>
+                <LinkPreviewPanel
+                  links={hoverPreviewLinks}
+                  description="Hover a news link to open a modal-like website preview. You can scroll directly in the preview frame without leaving this page."
+                />
               </LogPanel>
             </Section>
           </div>

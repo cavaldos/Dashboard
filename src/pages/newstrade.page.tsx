@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { LinkPreviewHoverAnchor } from '~/components/UI/LinkPreviewHoverAnchor';
+import type { LinkPreviewItem } from '~/components/UI/LinkPreviewPanel';
 import { cn } from '~/lib/utils';
 import { ForexService, type ForexEconomicEvent } from '~/services/forex.service';
 import '~/style/newstrade.css';
@@ -143,6 +145,18 @@ function resolveSourceUrl(source: string): string {
   }
 
   return `https://news.google.com/search?q=${encodeURIComponent(`${source} world economy politics`)}`;
+}
+
+function toSnapshotPreviewItem(id: string, label: string, description: string, url: string): LinkPreviewItem {
+  return {
+    id,
+    label,
+    description,
+    url,
+    previewMode: 'snapshot',
+    snapshotUrl: `https://image.thum.io/get/fullpage/width/1200/${url}`,
+    snapshotThumbUrl: `https://image.thum.io/get/width/640/${url}`,
+  };
 }
 
 const MONITOR_CARDS: MonitorCard[] = [
@@ -1449,31 +1463,42 @@ const NewstradePage = () => {
                 </tr>
               </thead>
               <tbody>
-                {visibleCalendarEvents.map((event) => (
-                  <tr key={event.id}>
-                    <td>{formatCalendarTimeLabel(event.timeUtc)}</td>
-                    <td>{event.currency}</td>
-                    <td>{event.country}</td>
-                    <td>
-                      <a href={event.sourceUrl} target="_blank" rel="noreferrer" className="newstrade-calendar-link">
-                        {event.event}
-                      </a>
-                    </td>
-                    <td>
-                      <span className={cn('newstrade-impact-pill', CALENDAR_IMPACT_CLASS_MAP[event.impact])}>
-                        {CALENDAR_IMPACT_LABELS[event.impact]}
-                      </span>
-                    </td>
-                    <td>{event.actual || '--'}</td>
-                    <td>{event.forecast || '--'}</td>
-                    <td>{event.previous || '--'}</td>
-                    <td>
-                      <a href={event.sourceUrl} target="_blank" rel="noreferrer" className="newstrade-calendar-source">
-                        {event.source}
-                      </a>
-                    </td>
-                  </tr>
-                ))}
+                {visibleCalendarEvents.map((event) => {
+                  const previewDescription = `${event.country} | ${event.currency} | ${event.source}`;
+                  const eventPreviewLink = toSnapshotPreviewItem(`calendar-event-${event.id}`, event.event, previewDescription, event.sourceUrl);
+                  const sourcePreviewLink = toSnapshotPreviewItem(
+                    `calendar-source-${event.id}`,
+                    event.source,
+                    `${event.country} desk source`,
+                    event.sourceUrl,
+                  );
+
+                  return (
+                    <tr key={event.id}>
+                      <td>{formatCalendarTimeLabel(event.timeUtc)}</td>
+                      <td>{event.currency}</td>
+                      <td>{event.country}</td>
+                      <td>
+                        <LinkPreviewHoverAnchor link={eventPreviewLink} className="newstrade-calendar-link">
+                          {event.event}
+                        </LinkPreviewHoverAnchor>
+                      </td>
+                      <td>
+                        <span className={cn('newstrade-impact-pill', CALENDAR_IMPACT_CLASS_MAP[event.impact])}>
+                          {CALENDAR_IMPACT_LABELS[event.impact]}
+                        </span>
+                      </td>
+                      <td>{event.actual || '--'}</td>
+                      <td>{event.forecast || '--'}</td>
+                      <td>{event.previous || '--'}</td>
+                      <td>
+                        <LinkPreviewHoverAnchor link={sourcePreviewLink} className="newstrade-calendar-source">
+                          {event.source}
+                        </LinkPreviewHoverAnchor>
+                      </td>
+                    </tr>
+                  );
+                })}
 
                 {visibleCalendarEvents.length === 0 && (
                   <tr>
